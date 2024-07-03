@@ -11,34 +11,34 @@ const PlayVideo: React.FC = () => {
   const [audioUrl, setAudioUrl] = useState("");
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const connectToStream = () => {
-    const eventSource = new EventSource("/api/subscribeMessage");
-    eventSource.addEventListener("message", (event) => {
-      console.log("Received message event:", event);
-      const newAudioUrl = event.data;
-      if (newAudioUrl) {
-        setAudioUrl(newAudioUrl);
-      } else {
-        console.error("Received invalid audio URL");
-      }
-    });
+  // const connectToStream = () => {
+  //   const eventSource = new EventSource("/api/subscribeMessage");
+  //   eventSource.addEventListener("message", (event) => {
+  //     console.log("Received message event:", event);
+  //     const newAudioUrl = event.data;
+  //     if (newAudioUrl) {
+  //       setAudioUrl(newAudioUrl);
+  //     } else {
+  //       console.error("Received invalid audio URL");
+  //     }
+  //   });
 
-    eventSource.addEventListener("error", (error) => {
-      console.error("EventSource error:", error);
-      eventSource.close();
-      setTimeout(connectToStream, 1); // Use 1 second timeout to prevent rapid reconnection attempts
-    });
+  //   eventSource.addEventListener("error", (error) => {
+  //     console.error("EventSource error:", error);
+  //     eventSource.close();
+  //     setTimeout(connectToStream, 1); // Use 1 second timeout to prevent rapid reconnection attempts
+  //   });
 
-    return eventSource;
-  };
+  //   return eventSource;
+  // };
 
-  useEffect(() => {
-    const eventSource = connectToStream();
-    return () => {
-      console.log("CLOSED");
-      eventSource.close();
-    };
-  }, []);
+  // useEffect(() => {
+  //   const eventSource = connectToStream();
+  //   return () => {
+  //     console.log("CLOSED");
+  //     eventSource.close();
+  //   };
+  // }, []);
 
   useEffect(() => {
     if (audioRef.current && audioUrl) {
