@@ -70,15 +70,6 @@ const PlayVideo: React.FC = () => {
     }
   };
 
-  const handleStart = () => {
-    setIsPlaying(true);
-    if (videoRef.current) {
-      videoRef.current.play().catch((error) => {
-        console.error("Error playing video:", error);
-      });
-    }
-  };
-
   return (
     <div className="grid grid-cols-3 h-[100dvh]">
       <div className="col-span-3 flex items-center justify-center bg-white h-full">
