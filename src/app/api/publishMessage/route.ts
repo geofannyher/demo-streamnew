@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 const RABBITMQ_URL = process.env.NEXT_RABBITMQ_URL;
 export async function POST(req: Request, res: NextApiResponse) {
   if (req.method === "POST") {
-    const { message } = await req.json();
+    const { message, videoUrl, model_name } = await req.json();
     if (typeof message !== "string" || message.trim() === "") {
       return NextResponse.json({ success: false, message: "Invalid message" });
     }
@@ -25,10 +25,10 @@ export async function POST(req: Request, res: NextApiResponse) {
       const channel = await connection.createChannel();
       console.log("Channel created");
 
-      await channel.assertQueue("audio_queue3", { durable: false });
+      await channel.assertQueue("audio_queue1", { durable: false });
       console.log("Queue asserted");
 
-      channel.sendToQueue("audio_queue3", Buffer.from(message));
+      channel.sendToQueue("audio_queue1", Buffer.from(message));
       console.log("Message sent to queue");
 
       await channel.close();

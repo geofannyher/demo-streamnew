@@ -11,11 +11,10 @@ async function setupRabbitMQ() {
   }
   connection = await amqp.connect(process.env.NEXT_RABBITMQ_URL);
   channel = await connection.createChannel();
-  await channel.assertQueue("audio_queue3", { durable: false });
+  await channel.assertQueue("audio_queue1", { durable: false });
 }
 
 export const runtime = "nodejs";
-// This is required to enable streaming
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, res: NextApiResponse) {
@@ -27,15 +26,25 @@ export async function GET(req: Request, res: NextApiResponse) {
 
     const stream = new ReadableStream({
       start(controller) {
-        // Subscribe to Redis updates for the key: "posts"
-        // In case of any error, just log it
         channel.consume(
-          "audio_queue3",
+          "audio_queue1",
           (msg: Message | null) => {
             if (msg !== null) {
               console.log("Received message:", msg.content.toString());
+
+              console.log(msg);
+              // Decode the received message
+              const data = JSON.parse(msg.content.toString());
+
+              // Prepare the response data
+              const responseData = {
+                message: data.message,
+                videoUrl: data.videoUrl,
+                model_name: data.model_name,
+              };
+
               controller.enqueue(
-                encoder.encode("data: " + msg.content.toString() + "\n\n")
+                encoder.encode("data: " + JSON.stringify(responseData) + "\n\n")
               );
               channel.ack(msg);
             }
