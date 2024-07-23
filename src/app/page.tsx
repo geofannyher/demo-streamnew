@@ -10,6 +10,8 @@ const PlayVideo: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [timeStart, setTimeStart] = useState(0);
   const [timeEnd, setTimeEnd] = useState(0);
+  const [idleTimeStart, setIdleTimeStart] = useState(0);
+  const [idleTimeEnd, setIdleTimeEnd] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [miraIdle, setMiraIdle] = useState("");
@@ -22,30 +24,38 @@ const PlayVideo: React.FC = () => {
     } else if (data && data.length > 0) {
       const mira = data.find((item) => item.model_name === "mira");
       const gembul = data.find((item) => item.model_name === "gembul");
-
-      console.log(mira.video_url);
-      if (mira) setMiraIdle(mira.video_url);
-      if (gembul) setGembulIdle(gembul.video_url);
+      const modelIdle = localStorage.getItem("modelstream");
+      if (mira && modelIdle === "mira") {
+        setMiraIdle(mira.video_url);
+        setIdleTimeStart(mira.time_start);
+        setIdleTimeEnd(mira.time_end);
+      }
+      if (gembul && modelIdle === "gembul") {
+        setGembulIdle(gembul.video_url);
+        setIdleTimeStart(gembul.time_start);
+        setIdleTimeEnd(gembul.time_end);
+      }
     }
   };
 
   useEffect(() => {
     fetchDataModel();
+  }, []);
 
+  useEffect(() => {
     const modelIdle = localStorage.getItem("modelstream");
     if (modelIdle === "mira" && miraIdle) {
       setVideoIdle(miraIdle);
-      console.log(miraIdle);
-      setTimeStart(23);
-      setTimeEnd(24);
+      setTimeStart(idleTimeStart);
+      setTimeEnd(idleTimeEnd);
     } else if (modelIdle === "gembul" && gembulIdle) {
       setVideoIdle(gembulIdle);
-      setTimeStart(0);
-      setTimeEnd(10);
+      setTimeStart(idleTimeStart);
+      setTimeEnd(idleTimeEnd);
     } else {
       setVideoIdle("");
     }
-  }, [miraIdle, gembulIdle]);
+  }, [miraIdle, gembulIdle, idleTimeStart, idleTimeEnd]);
 
   useEffect(() => {
     socket.on("receive_message", ({ audio_url, time_start, time_end }) => {
@@ -55,6 +65,7 @@ const PlayVideo: React.FC = () => {
       setIsPlaying(true);
       if (videoRef.current) {
         videoRef.current.currentTime = time_start;
+        videoRef.current.play();
       }
     });
 
@@ -79,8 +90,10 @@ const PlayVideo: React.FC = () => {
     console.log("Audio ended");
     setAudioUrl("");
     setIsPlaying(false);
+    setTimeStart(idleTimeStart); // Reset to idle start
+    setTimeEnd(idleTimeEnd);
     if (videoRef.current) {
-      videoRef.current.currentTime = timeStart; // Reset video to start
+      videoRef.current.currentTime = idleTimeStart;
     }
   };
 
@@ -88,13 +101,17 @@ const PlayVideo: React.FC = () => {
     if (videoRef.current) {
       if (videoRef.current.currentTime >= timeEnd) {
         videoRef.current.currentTime = timeStart;
+        videoRef.current.play();
       }
     }
   };
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
-      videoRef.current.currentTime = isPlaying ? timeStart : timeStart;
+      videoRef.current.currentTime = timeStart;
+      if (isPlaying) {
+        videoRef.current.play();
+      }
     }
   };
 
@@ -113,6 +130,7 @@ const PlayVideo: React.FC = () => {
                 <video
                   ref={videoRef}
                   autoPlay
+                  controls
                   muted
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={handleLoadedMetadata}

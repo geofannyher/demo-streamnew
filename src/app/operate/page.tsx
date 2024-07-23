@@ -47,7 +47,6 @@ const Page = () => {
         .select("*")
         .eq("code", match[1]);
 
-      console.log(res);
       await handleSend({
         time_start: res.data[0].time_start,
         time_end: res.data[0].time_end,

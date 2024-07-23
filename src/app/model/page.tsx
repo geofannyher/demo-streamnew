@@ -9,6 +9,8 @@ import { useFormHandler } from "../hook/useSubmitAction";
 const SubmitMessage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [model, setModel] = useState("");
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
   const [status, setStatus] = useState("");
   const [api, context] = notification.useNotification();
   const [responseMessage, setResponseMessage] = useState<string | null>(null);
@@ -60,6 +62,8 @@ const SubmitMessage: React.FC = () => {
         model_name: model,
         video_url: fileUrlString,
         action_name: "idle",
+        time_start: start,
+        time_end: end,
       });
       setResponseMessage("Model successfully created and processed");
       setModel("");
@@ -102,6 +106,24 @@ const SubmitMessage: React.FC = () => {
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
                 />
+                <div className="mb-4">
+                  <label htmlFor="name">Time Start for idle</label>
+                  <input
+                    type="number"
+                    onChange={(e) => setStart(e.target.value)}
+                    className="w-full p-2 border rounded no-spinner"
+                    placeholder="time start..."
+                  />
+                </div>
+                <div className="mb-4">
+                  <label htmlFor="name">Time End for idle</label>
+                  <input
+                    onChange={(e) => setEnd(e.target.value)}
+                    type="number"
+                    className="w-full p-2 border rounded no-spinner"
+                    placeholder="time end..."
+                  />
+                </div>
               </div>
               <button
                 disabled={loading}
