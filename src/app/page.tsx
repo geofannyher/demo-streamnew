@@ -1,6 +1,7 @@
 "use client";
 
 import { socket } from "@/lib/socket";
+import { supabase } from "@/lib/supabase";
 import React, { useEffect, useRef, useState } from "react";
 
 const PlayVideo: React.FC = () => {
@@ -11,25 +12,40 @@ const PlayVideo: React.FC = () => {
   const [timeEnd, setTimeEnd] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const miraIdle =
-    "https://res.cloudinary.com/dp8ita8x5/video/upload/v1721710825/uploads/zv5srxv2dlidtcie0min.mp4";
-  const gembulIdle =
-    "https://res.cloudinary.com/dp8ita8x5/video/upload/v1720685155/videoStream/gemuk/wpoydfqeewnhdvtr9mog.mp4";
+  const [miraIdle, setMiraIdle] = useState("");
+  const [gembulIdle, setGembulIdle] = useState("");
+
+  const fetchDataModel = async () => {
+    const { data, error } = await supabase.from("model").select("*");
+    if (error) {
+      console.error("Error fetching data from Supabase:", error);
+    } else if (data && data.length > 0) {
+      const mira = data.find((item) => item.model_name === "mira");
+      const gembul = data.find((item) => item.model_name === "gembul");
+
+      console.log(mira.video_url);
+      if (mira) setMiraIdle(mira.video_url);
+      if (gembul) setGembulIdle(gembul.video_url);
+    }
+  };
 
   useEffect(() => {
+    fetchDataModel();
+
     const modelIdle = localStorage.getItem("modelstream");
-    if (modelIdle === "mira") {
+    if (modelIdle === "mira" && miraIdle) {
       setVideoIdle(miraIdle);
+      console.log(miraIdle);
       setTimeStart(23);
       setTimeEnd(24);
-    } else if (modelIdle === "gembul") {
+    } else if (modelIdle === "gembul" && gembulIdle) {
       setVideoIdle(gembulIdle);
       setTimeStart(0);
       setTimeEnd(10);
     } else {
       setVideoIdle("");
     }
-  }, []);
+  }, [miraIdle, gembulIdle]);
 
   useEffect(() => {
     socket.on("receive_message", ({ audio_url, time_start, time_end }) => {
@@ -63,10 +79,8 @@ const PlayVideo: React.FC = () => {
     console.log("Audio ended");
     setAudioUrl("");
     setIsPlaying(false);
-    setTimeStart(23);
-    setTimeEnd(24);
     if (videoRef.current) {
-      videoRef.current.currentTime = 23; // Reset video to start
+      videoRef.current.currentTime = timeStart; // Reset video to start
     }
   };
 
@@ -80,7 +94,7 @@ const PlayVideo: React.FC = () => {
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
-      videoRef.current.currentTime = isPlaying ? timeStart : 23;
+      videoRef.current.currentTime = isPlaying ? timeStart : timeStart;
     }
   };
 
