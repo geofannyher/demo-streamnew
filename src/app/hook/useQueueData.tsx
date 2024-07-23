@@ -20,5 +20,5 @@ export const useQueueData = ({ model_name }: { model_name: string }) => {
     fetchData({ model_name });
   }, [model_name]);
 
-  return { dataQueue, loading, error };
+  return { dataQueue, loading, error, fetchData };
 };

@@ -15,12 +15,12 @@ export const useFormHandler = () => {
     model_name,
     video_url,
   }: ISubmitHookProps) => {
+    setLoading(true);
     e.preventDefault();
     const target = e.target as HTMLFormElement;
     const action = target.elements[0] as HTMLInputElement;
     const timeStart = target.elements[1] as HTMLInputElement;
     const timeEnd = target.elements[2] as HTMLInputElement;
-    setLoading(true);
     const res = await submitAction({
       action_name: action?.value,
       time_end: timeEnd?.value,
@@ -37,6 +37,7 @@ export const useFormHandler = () => {
   };
 
   const uploadFileToCloudinary = async (file: any) => {
+    setLoading(true);
     const formData = new FormData();
     formData.append("file", file?.originFileObj);
     formData.append("upload_preset", "rfc3rxgd");

@@ -1,34 +1,37 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useQueueData } from "../hook/useQueueData";
 import { useFormHandler } from "../hook/useSubmitAction";
 import { Form, message, Select, Upload, UploadFile, UploadProps } from "antd";
-import { InboxOutlined, LoadingOutlined } from "@ant-design/icons";
+import { LoadingOutlined } from "@ant-design/icons";
 import { useListModel } from "../hook/useListModel";
 import axios from "axios";
 import { supabase } from "@/lib/supabase";
 import { PostgrestSingleResponse } from "@supabase/supabase-js";
 import { socket } from "@/lib/socket";
+
 const Page = () => {
-  const {
-    handleSubmit,
-    loading: formLoading,
-    uploadFileToCloudinary,
-  } = useFormHandler();
+  const { handleSubmit, loading: formLoading } = useFormHandler();
   const { data } = useListModel();
   const [queueName, setqueueName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [fileUrl, setFileUrl] = useState<UploadFile | null>(null);
   const [model, setModel] = useState<string>("");
-  const { Dragger } = Upload;
-  const { dataQueue, loading: dataLoading } = useQueueData({
+
+  const {
+    dataQueue,
+    fetchData,
+    loading: dataLoading,
+  } = useQueueData({
     model_name: model,
   });
 
+  const formRef: any = useRef<HTMLFormElement>(null);
+
   const handleSendQueue = async () => {
     if (!model) {
-      return message.error("pilih model terlebih dahulu");
+      return message.error("Pilih model terlebih dahulu");
     }
     setLoading(true);
     const codeExists = dataQueue?.some((item) => {
@@ -41,16 +44,18 @@ const Page = () => {
       const match: any = queueName.match(regex);
       const res: PostgrestSingleResponse<any> = await supabase
         .from("action")
-        .select("code,model_name,video_url")
+        .select("*")
         .eq("code", match[1]);
 
+      console.log(res);
       await handleSend({
-        video_url: res?.data[0]?.video_url,
+        time_start: res.data[0].time_start,
+        time_end: res.data[0].time_end,
         text: queueName,
       });
     } else {
       setLoading(false);
-      return message.error("masukkan kode");
+      return message.error("Masukkan kode yang valid");
     }
   };
 
@@ -60,31 +65,34 @@ const Page = () => {
   ) => {
     e.preventDefault();
     if (!model) {
-      return message.error("pilih model terlebih dahulu");
+      return message.error("Pilih model terlebih dahulu");
     }
 
-    if (!fileUrl) {
-      return message.error("video tidak boleh kosong");
-    }
+    // if (!fileUrl) {
+    //   return message.error("Video tidak boleh kosong");
+    // }
 
-    if (fileUrl) {
-      const fileUrlString = await uploadFileToCloudinary(fileUrl);
-      await handleSubmit({
-        e,
-        video_url: fileUrlString,
-        model_name: model,
-      });
+    // const fileUrlString = await uploadFileToCloudinary(fileUrl);
+    const res = await handleSubmit({
+      e,
+      model_name: model,
+    });
+    if (res == "ok") {
+      message.success("Berhasil membuat action");
+      await fetchData({ model_name: model });
+      formRef.current.reset();
+      setFileUrl(null);
     }
     return null;
   };
 
-  const props: UploadProps = {
-    name: "file",
-    multiple: true,
-    onChange(info) {
-      setFileUrl(info?.file);
-    },
-  };
+  // const props: UploadProps = {
+  //   name: "file",
+  //   onChange(info) {
+  //     setFileUrl(info?.file);
+  //   },
+  // };
+
   const { Item } = Form;
 
   const handleChange = (value: string) => {
@@ -101,15 +109,18 @@ const Page = () => {
   }));
 
   const handleSend = async ({
-    video_url,
+    time_start,
+    time_end,
     text,
   }: {
-    video_url: string;
+    time_start: string;
+    time_end: string;
     text: string;
   }) => {
     if (!model) {
-      return message.error("pilih model terlebih dahulu");
+      return message.error("Pilih model terlebih dahulu");
     }
+    console.log(time_start, time_end);
     try {
       const newMessage = text.replace(/#\d+#/, "").trim();
       const result = await axios.post(
@@ -138,15 +149,17 @@ const Page = () => {
           },
         }
       );
+
       socket.emit("send_message", {
         audio_url: res?.data?.secure_url,
-        video_url,
+        time_start,
+        time_end,
       });
+
       setLoading(false);
       setqueueName("");
     } catch (error: any) {
       setLoading(false);
-
       console.error("Error sending message:", error);
     }
   };
@@ -186,7 +199,7 @@ const Page = () => {
 
         {/* form section  */}
         <div className="grid grid-cols-1 space-y-16  md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="md:col-span-3">
+          {/* <div className="md:col-span-3">
             <Dragger {...props}>
               <p className="ant-upload-drag-icon">
                 <InboxOutlined />
@@ -195,9 +208,10 @@ const Page = () => {
                 Click or drag file to this area to upload
               </p>
             </Dragger>
-          </div>
+          </div> */}
           <div className="md:col-span-1">
             <form
+              ref={formRef}
               onSubmit={(e) => handleCheck(e, fileUrl)}
               className="bg-white p-6 rounded-lg shadow-md"
             >
@@ -297,6 +311,7 @@ const Page = () => {
                   type="text"
                   disabled={loading}
                   onChange={(e) => setqueueName(e?.target?.value)}
+                  value={queueName} // Bind the input value to the state
                   className="w-full p-2 border rounded"
                   placeholder="Please Input..."
                 />
