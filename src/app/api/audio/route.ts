@@ -5,14 +5,14 @@ export async function POST(req: Request) {
   const { text } = await req.json();
   try {
     const result = await axios.post(
-      "https://api.elevenlabs.io/v1/text-to-speech/xM0TBYBF0vSckov9kDQy",
+      "https://api.elevenlabs.io/v1/text-to-speech/TQH4bFrt3FvqbbeSpOoH",
       {
         text: text,
         model_id: "eleven_multilingual_v2",
         voice_settings: {
-          stability: 0.4,
+          stability: 0.5,
           similarity_boost: 0.95,
-          style: 0.15,
+          style: 0,
           use_speaker_boost: true,
         },
       },
