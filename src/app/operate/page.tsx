@@ -1,33 +1,23 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQueueData } from "../hook/useQueueData";
-import { useFormHandler } from "../hook/useSubmitAction";
-import { Form, message, Select, Upload, UploadFile, UploadProps } from "antd";
-import { LoadingOutlined } from "@ant-design/icons";
+import { Form, message, Select } from "antd";
 import { useListModel } from "../hook/useListModel";
-import axios from "axios";
 import { supabase } from "@/lib/supabase";
 import { PostgrestSingleResponse } from "@supabase/supabase-js";
 import { socket } from "@/lib/socket";
 
 const Page = () => {
-  const { handleSubmit, loading: formLoading } = useFormHandler();
   const { data } = useListModel();
   const [queueName, setqueueName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [fileUrl, setFileUrl] = useState<UploadFile | null>(null);
   const [model, setModel] = useState<string>("");
-
-  const {
-    dataQueue,
-    fetchData,
-    loading: dataLoading,
-  } = useQueueData({
+  const [queueTable, setQueueTable] = useState([]);
+  const { dataQueue, loading: dataLoading } = useQueueData({
     model_name: model,
   });
-
-  const formRef: any = useRef<HTMLFormElement>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   const handleSendQueue = async () => {
     if (!model) {
@@ -42,61 +32,55 @@ const Page = () => {
     if (codeExists) {
       const regex = /#(\d+)#/;
       const match: any = queueName.match(regex);
-      const res: PostgrestSingleResponse<any> = await supabase
-        .from("action")
-        .select("*")
-        .eq("code", match[1]);
+      const newMessage = queueName.replace(/#\d+#/, "").trim();
 
-      await handleSend({
-        time_start: res.data[0].time_start,
-        time_end: res.data[0].time_end,
-        text: queueName,
-      });
+      try {
+        const res: PostgrestSingleResponse<any> = await supabase
+          .from("action")
+          .select("*")
+          .eq("code", match[1]);
+
+        await supabase.from("queueTable").insert({
+          action_name: res?.data[0]?.action_name,
+          text: newMessage,
+          queue_num: res?.data[0]?.code,
+          time_start: res?.data[0]?.time_start,
+          time_end: res?.data[0]?.time_end,
+        });
+        await fetchData();
+        setqueueName("");
+      } catch (error) {
+        console.error("Error submitting data:", error);
+        message.error("Terjadi kesalahan saat mengirim data");
+      } finally {
+        setLoading(false);
+      }
     } else {
       setLoading(false);
       return message.error("Masukkan kode yang valid");
     }
   };
 
-  const handleCheck = async (
-    e: React.FormEvent<HTMLFormElement>,
-    fileUrl: UploadFile | null
-  ) => {
-    e.preventDefault();
-    if (!model) {
-      return message.error("Pilih model terlebih dahulu");
-    }
-
-    // if (!fileUrl) {
-    //   return message.error("Video tidak boleh kosong");
-    // }
-
-    // const fileUrlString = await uploadFileToCloudinary(fileUrl);
-    const res = await handleSubmit({
-      e,
-      model_name: model,
-    });
-    if (res == "ok") {
-      message.success("Berhasil membuat action");
-      await fetchData({ model_name: model });
-      formRef.current.reset();
-      setFileUrl(null);
-    }
-    return null;
-  };
-
-  // const props: UploadProps = {
-  //   name: "file",
-  //   onChange(info) {
-  //     setFileUrl(info?.file);
-  //   },
-  // };
-
   const { Item } = Form;
 
   const handleChange = (value: string) => {
     setModel(value);
   };
+
+  const fetchData = async () => {
+    const getQueueTable: any = await supabase.from("queueTable").select("*");
+    setQueueTable(getQueueTable?.data);
+  };
+
+  useEffect(() => {
+    // Fetch initial data
+    fetchData();
+
+    const intervalId = setInterval(() => {
+      fetchData();
+    }, 3000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleChangeStream = (value: string) => {
     localStorage.setItem("modelstream", value);
@@ -106,62 +90,6 @@ const Page = () => {
     value: item.model_name,
     label: item.model_name,
   }));
-
-  const handleSend = async ({
-    time_start,
-    time_end,
-    text,
-  }: {
-    time_start: string;
-    time_end: string;
-    text: string;
-  }) => {
-    if (!model) {
-      return message.error("Pilih model terlebih dahulu");
-    }
-    console.log(time_start, time_end);
-    try {
-      const newMessage = text.replace(/#\d+#/, "").trim();
-      const result = await axios.post(
-        "/api/audio",
-        { text: newMessage },
-        { responseType: "arraybuffer" }
-      );
-
-      if (result.status !== 200) {
-        throw new Error("Failed to generate audio");
-      }
-
-      const mainAudioBlob = new Blob([result.data], {
-        type: "audio/mpeg",
-      });
-      const formData = new FormData();
-      formData.append("file", mainAudioBlob);
-      formData.append("upload_preset", "rfc3rxgd");
-
-      const res = await axios.post(
-        `https://api.cloudinary.com/v1_1/dp8ita8x5/upload`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      socket.emit("send_message", {
-        audio_url: res?.data?.secure_url,
-        time_start,
-        time_end,
-      });
-
-      setLoading(false);
-      setqueueName("");
-    } catch (error: any) {
-      setLoading(false);
-      console.error("Error sending message:", error);
-    }
-  };
 
   return (
     <div className="flex flex-col items-center justify-center h-[100dvh] bg-zinc-50 p-5">
@@ -197,62 +125,35 @@ const Page = () => {
         </div>
 
         {/* form section  */}
-        <div className="grid grid-cols-1 space-y-16  md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* <div className="md:col-span-3">
-            <Dragger {...props}>
-              <p className="ant-upload-drag-icon">
-                <InboxOutlined />
-              </p>
-              <p className="ant-upload-text">
-                Click or drag file to this area to upload
-              </p>
-            </Dragger>
-          </div> */}
+        <div className="grid grid-cols-1  md:grid-cols-4 lg:grid-cols-4 gap-4">
           <div className="md:col-span-1">
-            <form
-              ref={formRef}
-              onSubmit={(e) => handleCheck(e, fileUrl)}
-              className="bg-white p-6 rounded-lg shadow-md"
-            >
+            <form onSubmit={(e) => e.preventDefault()}>
               <div className="mb-4">
-                <label htmlFor="name">Action Name</label>
-                <input
-                  disabled={formLoading}
-                  type="text"
-                  name="action"
-                  className="w-full p-2 border rounded"
-                  placeholder="action name..."
-                />
-              </div>
-              <div className="mb-4">
-                <label htmlFor="name">Time Start</label>
-                <input
-                  disabled={formLoading}
-                  type="number"
-                  className="w-full p-2 border rounded no-spinner"
-                  placeholder="time start..."
-                />
-              </div>
-              <div className="mb-4">
-                <label htmlFor="name">Time End</label>
-                <input
-                  disabled={formLoading}
-                  type="number"
-                  className="w-full p-2 border rounded no-spinner"
-                  placeholder="time end..."
+                <textarea
+                  disabled={loading}
+                  onChange={(e) => setqueueName(e?.target?.value)}
+                  value={queueName} // Bind the input value to the state
+                  className="w-full h-80 p-2 border rounded"
+                  placeholder="Please Input..."
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSendQueue();
+                    }
+                  }}
                 />
               </div>
               <button
-                disabled={formLoading}
-                className={`w-full hover:bg-violet-900 transition duration-300 text-white p-2 rounded ${
-                  formLoading ? "bg-gray-400" : "bg-violet-500"
-                }`}
+                disabled={loading}
+                onClick={handleSendQueue}
+                className={`bg-violet-500 hover:bg-violet-900
+                } w-full  transition duration-300 text-white p-2 rounded`}
               >
-                {formLoading ? <LoadingOutlined /> : "Create"}
+                Send to Queue
               </button>
             </form>
           </div>
-          <div className="md:col-span-1">
+          <div className="md:col-span-2">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left rtl:text-right border text-gray-500">
                 <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -303,30 +204,36 @@ const Page = () => {
               </table>
             </div>
           </div>
-          <div className="md:col-span-1">
-            <form onSubmit={(e) => e.preventDefault()}>
-              <div className="mb-4">
-                <input
-                  type="text"
-                  disabled={loading}
-                  onChange={(e) => setqueueName(e?.target?.value)}
-                  value={queueName} // Bind the input value to the state
-                  className="w-full p-2 border rounded"
-                  placeholder="Please Input..."
-                />
-              </div>
-              <button
-                disabled={loading}
-                onClick={handleSendQueue}
-                className={`${
-                  loading
-                    ? "bg-gray-800 cursor-not-allowed"
-                    : "bg-violet-500 hover:bg-violet-900"
-                } w-full  transition duration-300 text-white p-2 rounded`}
-              >
-                {loading ? <LoadingOutlined /> : "Send to Queue"}
-              </button>
-            </form>
+
+          <div className="md:col-span-1 ">
+            {/* queue table  */}
+            <div className="overflow-auto">
+              <table className="w-full text-sm text-left rtl:text-right border text-gray-500 min-w-full">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3">
+                      Queue
+                    </th>
+                    <th scope="col" className="px-6 py-3">
+                      Action Name
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {queueTable.map((item: any, index) => (
+                    <tr className="bg-white" key={index}>
+                      <th
+                        scope="row"
+                        className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
+                      >
+                        {item?.action_name}
+                      </th>
+                      <td className="px-6 py-4">{item?.text}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

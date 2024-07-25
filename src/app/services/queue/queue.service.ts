@@ -16,7 +16,6 @@ export const getQueueData = async ({
     .from("action")
     .select("*")
     .eq("model_name", model_name);
-  console.log(data);
   if (error) {
     return { data: null, error } as PostgrestResponse<Action>;
   } else {

@@ -25,15 +25,16 @@ const PlayVideo: React.FC = () => {
       const mira = data.find((item) => item.model_name === "mira");
       const gembul = data.find((item) => item.model_name === "gembul");
       const modelIdle = localStorage.getItem("modelstream");
+
       if (mira && modelIdle === "mira") {
         setMiraIdle(mira.video_url);
-        setIdleTimeStart(mira.time_start);
-        setIdleTimeEnd(mira.time_end);
+        setIdleTimeStart(mira.time_start ? mira.time_start : 0);
+        setIdleTimeEnd(mira.time_end ? mira.time_end : 10);
       }
       if (gembul && modelIdle === "gembul") {
         setGembulIdle(gembul.video_url);
-        setIdleTimeStart(gembul.time_start);
-        setIdleTimeEnd(gembul.time_end);
+        setIdleTimeStart(gembul.time_start ? mira.time_start : 0);
+        setIdleTimeEnd(gembul.time_end ? mira.time_end : 10);
       }
     }
   };
@@ -90,11 +91,12 @@ const PlayVideo: React.FC = () => {
     console.log("Audio ended");
     setAudioUrl("");
     setIsPlaying(false);
-    setTimeStart(idleTimeStart); // Reset to idle start
+    setTimeStart(idleTimeStart);
     setTimeEnd(idleTimeEnd);
     if (videoRef.current) {
       videoRef.current.currentTime = idleTimeStart;
     }
+    socket.emit("audio_finished");
   };
 
   const handleTimeUpdate = () => {
