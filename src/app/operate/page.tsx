@@ -6,7 +6,6 @@ import { Form, message, Select } from "antd";
 import { useListModel } from "../hook/useListModel";
 import { supabase } from "@/lib/supabase";
 import { PostgrestSingleResponse } from "@supabase/supabase-js";
-import { socket } from "@/lib/socket";
 
 const Page = () => {
   const { data } = useListModel();
@@ -17,28 +16,25 @@ const Page = () => {
   const { dataQueue, loading: dataLoading } = useQueueData({
     model_name: model,
   });
-  const [isConnected, setIsConnected] = useState(false);
-
   const handleSendQueue = async () => {
     if (!model) {
       return message.error("Pilih model terlebih dahulu");
     }
     setLoading(true);
     const codeExists = dataQueue?.some((item) => {
-      const items = item?.code.toString();
+      const items = item?.codee.toString();
       return queueName.includes(items);
     });
 
     if (codeExists) {
-      const regex = /#(\d+)#/;
+      const regex = /^[^\s]+/;
       const match: any = queueName.match(regex);
-      const newMessage = queueName.replace(/#\d+#/, "").trim();
-
+      const newMessage = queueName.replace(regex, "").trim();
       try {
         const res: PostgrestSingleResponse<any> = await supabase
           .from("action")
           .select("*")
-          .eq("code", match[1]);
+          .eq("codee", match[0]);
 
         await supabase.from("queueTable").insert({
           action_name: res?.data[0]?.action_name,
@@ -73,7 +69,6 @@ const Page = () => {
   };
 
   useEffect(() => {
-    // Fetch initial data
     fetchData();
 
     const intervalId = setInterval(() => {
@@ -95,7 +90,7 @@ const Page = () => {
     <div className="flex flex-col items-center justify-center h-[100dvh] bg-zinc-50 p-5">
       <div className="container mx-auto ">
         {/* select section  */}
-        <div className="grid grid-cols-12 gap-4">
+        <div className="grid grid-cols-12  gap-4">
           <div className="col-span-6">
             <h1 className="py-2">Pilih Model untuk tambah action</h1>
             <Item name="model" className="w-full  px-2">
@@ -125,8 +120,8 @@ const Page = () => {
         </div>
 
         {/* form section  */}
-        <div className="grid grid-cols-1  md:grid-cols-4 lg:grid-cols-4 gap-4">
-          <div className="md:col-span-1">
+        <div className="grid grid-cols-1   md:grid-cols-12 lg:grid-cols-12 gap-4">
+          <div className="md:col-span-3">
             <form onSubmit={(e) => e.preventDefault()}>
               <div className="mb-4">
                 <textarea
@@ -153,7 +148,7 @@ const Page = () => {
               </button>
             </form>
           </div>
-          <div className="md:col-span-2">
+          <div className="md:col-span-4">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left rtl:text-right border text-gray-500">
                 <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -196,7 +191,7 @@ const Page = () => {
                         >
                           {item.action_name}
                         </th>
-                        <td className="px-6 py-4">{item.code}</td>
+                        <td className="px-6 py-4">{item.codee}</td>
                       </tr>
                     ))
                   )}
@@ -205,11 +200,11 @@ const Page = () => {
             </div>
           </div>
 
-          <div className="md:col-span-1 ">
+          <div className="md:col-span-5">
             {/* queue table  */}
-            <div className="overflow-auto">
-              <table className="w-full text-sm text-left rtl:text-right border text-gray-500 min-w-full">
-                <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+            <div className="overflow-y-auto h-full max-h-[50vh]">
+              <table className="text-sm text-left border text-gray-500 w-full">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                   <tr>
                     <th scope="col" className="px-6 py-3">
                       Queue

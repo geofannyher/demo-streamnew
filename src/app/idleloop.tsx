@@ -23,6 +23,8 @@ const PlayVideo: React.FC = () => {
     "https://res.cloudinary.com/dp8ita8x5/video/upload/v1722393916/videoStream/streamwmodel/audioIdle/fkm0pk7poblf1sdsfhg5.mp3",
   ];
 
+  const [currentAudioIndex, setCurrentAudioIndex] = useState(0);
+
   const fetchDataModel = async () => {
     const { data, error } = await supabase.from("model").select("*");
     if (error) {
@@ -65,8 +67,8 @@ const PlayVideo: React.FC = () => {
   }, [miraIdle, gembulIdle, idleTimeStart, idleTimeEnd]);
 
   useEffect(() => {
-    // Set initial random idle audio when component mounts
-    setAudioUrl(idleAudios[Math.floor(Math.random() * idleAudios.length)]);
+    // Set initial random idle audio index when component mounts
+    setCurrentAudioIndex(Math.floor(Math.random() * idleAudios.length));
   }, []);
 
   useEffect(() => {
@@ -95,8 +97,8 @@ const PlayVideo: React.FC = () => {
         console.error("Error playing audio:", error);
       });
 
-      // Enable looping only for idle audio
-      audioRef.current.loop = idleAudios.includes(audioUrl);
+      // Disable looping for idle audio
+      audioRef.current.loop = false;
     }
   }, [audioUrl]);
 
@@ -105,7 +107,9 @@ const PlayVideo: React.FC = () => {
     setIsPlaying(false);
     setTimeStart(idleTimeStart);
     setTimeEnd(idleTimeEnd);
-    setAudioUrl(idleAudios[Math.floor(Math.random() * idleAudios.length)]);
+    const nextAudioIndex = (currentAudioIndex + 1) % idleAudios.length;
+    setCurrentAudioIndex(nextAudioIndex);
+    setAudioUrl(idleAudios[nextAudioIndex]);
     if (videoRef.current) {
       videoRef.current.currentTime = idleTimeStart;
     }

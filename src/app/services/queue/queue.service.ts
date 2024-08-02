@@ -6,6 +6,7 @@ export interface Action {
   time_start: string;
   time_end: string;
   code: string;
+  codee: string;
 }
 export const getQueueData = async ({
   model_name,
