@@ -25,12 +25,34 @@ const Page = () => {
       const items = item?.codee.toString();
       return queueName.includes(items);
     });
-
+    const checkMessage = queueName.length;
     if (codeExists) {
       const regex = /^[^\s]+/;
       const match: any = queueName.match(regex);
-      const newMessage = queueName.replace(regex, "").trim();
-      try {
+      const res: PostgrestSingleResponse<any> = await supabase
+        .from("action")
+        .select("*")
+        .eq("codee", match[0]);
+
+      if (checkMessage > 2) {
+        try {
+          const newMessage = queueName.replace(regex, "").trim();
+          await supabase.from("queueTable").insert({
+            action_name: res?.data[0]?.action_name,
+            text: newMessage,
+            queue_num: res?.data[0]?.code,
+            time_start: res?.data[0]?.time_start,
+            time_end: res?.data[0]?.time_end,
+          });
+          setqueueName("");
+          setLoading(false);
+          await fetchData();
+        } catch (error) {
+          message.error("Terjadi kesalahan saat mengirim data");
+        } finally {
+          setLoading(false);
+        }
+      } else {
         const res: PostgrestSingleResponse<any> = await supabase
           .from("action")
           .select("*")
@@ -38,18 +60,14 @@ const Page = () => {
 
         await supabase.from("queueTable").insert({
           action_name: res?.data[0]?.action_name,
-          text: newMessage,
-          queue_num: res?.data[0]?.code,
+          text: "ready",
+          queue_num: res?.data[0]?.codee,
           time_start: res?.data[0]?.time_start,
           time_end: res?.data[0]?.time_end,
         });
-        await fetchData();
         setqueueName("");
-      } catch (error) {
-        console.error("Error submitting data:", error);
-        message.error("Terjadi kesalahan saat mengirim data");
-      } finally {
         setLoading(false);
+        await fetchData();
       }
     } else {
       setLoading(false);
