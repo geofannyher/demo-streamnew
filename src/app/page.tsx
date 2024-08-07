@@ -33,7 +33,7 @@ const PlayVideo: React.FC = () => {
         const gembul = data.find((item) => item.model_name === "gembul");
         const modelIdle = localStorage.getItem("modelstream");
 
-        const setIdleData = (model) => {
+        const setIdleData = (model: any) => {
           setIdleTimeStart(model.time_start || 0);
           setIdleTimeEnd(model.time_end || 10);
         };
