@@ -182,6 +182,8 @@ const PlayVideo: React.FC = () => {
       }
     }
   };
+  console.log(currentVideoUrl);
+  console.log(videoIdle);
 
   return (
     <div className="grid grid-cols-3 h-[100dvh]">
