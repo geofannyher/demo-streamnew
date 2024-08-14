@@ -116,8 +116,8 @@ const Page = () => {
     <div className="flex flex-col items-center justify-center h-[100dvh] bg-zinc-50 p-5">
       <div className="container mx-auto ">
         {/* select section  */}
-        <div className="grid grid-cols-6  gap-4">
-          <div className="col-span-12">
+        <div className="grid grid-cols-12  gap-4">
+          <div className="col-span-6">
             <h1 className="py-2">Pilih Model untuk tambah action</h1>
             <Item name="model" className="w-full  px-2">
               {data && (
