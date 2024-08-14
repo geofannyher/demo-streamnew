@@ -16,6 +16,8 @@ const PlayVideo: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [miraIdle, setMiraIdle] = useState("");
   const [gembulIdle, setGembulIdle] = useState("");
+
+  console.log("miraIdle", miraIdle);
   // List of Cloudinary audio URLs for idle state
   const idleAudios = [
     "https://res.cloudinary.com/dp8ita8x5/video/upload/v1723623433/videoStream/testMira/baju.mp3",
