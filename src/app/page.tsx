@@ -17,7 +17,6 @@ const PlayVideo: React.FC = () => {
   const [miraIdle, setMiraIdle] = useState("");
   const [gembulIdle, setGembulIdle] = useState("");
 
-  console.log("miraIdle", miraIdle);
   // List of Cloudinary audio URLs for idle state
   const idleAudios = [
     "https://res.cloudinary.com/dp8ita8x5/video/upload/v1723623433/videoStream/testMira/baju.mp3",
@@ -184,8 +183,6 @@ const PlayVideo: React.FC = () => {
       }
     }
   };
-  console.log(currentVideoUrl);
-  console.log(videoIdle);
 
   return (
     <div className="grid grid-cols-3 h-[100dvh]">
@@ -201,8 +198,8 @@ const PlayVideo: React.FC = () => {
               {videoIdle && (
                 <video
                   ref={videoRef}
-                  // autoPlay
-                  controls
+                  autoPlay
+                  // controls
                   muted={!currentVideoUrl}
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={handleLoadedMetadata}
