@@ -25,18 +25,18 @@ const Page = () => {
       const items = item?.code.toString();
       return queueName.includes(items);
     });
-    const checkMessage = queueName.length;
+
     if (codeExists) {
       const regex = /^[^\s]+/;
       const match: any = queueName.match(regex);
-      const res: PostgrestSingleResponse<any> = await supabase
-        .from("action")
-        .select("*")
-        .eq("code", match[0]);
-
-      if (checkMessage > 2) {
+      const newMessage = queueName.replace(regex, "").trim();
+      if (queueName.length > 2) {
         try {
-          const newMessage = queueName.replace(regex, "").trim();
+          const res: PostgrestSingleResponse<any> = await supabase
+            .from("action")
+            .select("*")
+            .eq("code", match[0]);
+
           await supabase.from("queueTable").insert({
             action_name: res?.data[0]?.action_name,
             text: newMessage,
@@ -44,10 +44,11 @@ const Page = () => {
             time_start: res?.data[0]?.time_start,
             time_end: res?.data[0]?.time_end,
           });
-          setqueueName("");
-          setLoading(false);
+
           await fetchData();
+          setqueueName("");
         } catch (error) {
+          console.error("Error submitting data:", error);
           message.error("Terjadi kesalahan saat mengirim data");
         } finally {
           setLoading(false);
@@ -65,6 +66,7 @@ const Page = () => {
           time_start: res?.data[0]?.time_start,
           time_end: res?.data[0]?.time_end,
         });
+        await fetchData();
         setqueueName("");
         setLoading(false);
       }
@@ -79,20 +81,6 @@ const Page = () => {
   const handleChange = (value: string) => {
     setModel(value);
   };
-  supabase
-    .channel("schema-db-changes")
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "queueTable",
-      },
-      () => {
-        fetchData();
-      }
-    )
-    .subscribe();
 
   const fetchData = async () => {
     const getQueueTable: any = await supabase.from("queueTable").select("*");
@@ -101,6 +89,13 @@ const Page = () => {
 
   useEffect(() => {
     fetchData();
+
+    // Set up real-time subscription for INSERT events
+    const interval = setInterval(() => {
+      fetchData();
+    }, 3000);
+    // Cleanup subscription on component unmount
+    return () => clearInterval(interval);
   }, []);
 
   const handleChangeStream = (value: string) => {
