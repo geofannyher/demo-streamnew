@@ -198,7 +198,7 @@ const PlayVideo: React.FC = () => {
                 <video
                   ref={videoRef}
                   autoPlay
-                  // controls
+                  controls
                   muted={!currentVideoUrl}
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={handleLoadedMetadata}
