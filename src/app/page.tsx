@@ -197,7 +197,7 @@ const PlayVideo: React.FC = () => {
               {videoIdle && (
                 <video
                   ref={videoRef}
-                  autoPlay
+                  // autoPlay
                   controls
                   muted={!currentVideoUrl}
                   onTimeUpdate={handleTimeUpdate}
