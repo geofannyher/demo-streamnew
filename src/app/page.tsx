@@ -109,7 +109,7 @@ const PlayVideo: React.FC = () => {
     if (audioUrl && audioRef.current) {
       audioRef.current.src = audioUrl;
       audioRef.current.load();
-      audioRef.current.volume = 0.01;
+      audioRef.current.volume = 0.2;
       audioRef.current.play().catch((error) => {
         console.error("Error playing audio:", error);
       });
