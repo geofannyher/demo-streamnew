@@ -63,9 +63,9 @@ const PlayVideo: React.FC = () => {
     }
   }, [miraIdle, idleTimeStart, idleTimeEnd]);
 
-  useEffect(() => {
-    setAudioUrl(idleAudios[Math.floor(Math.random() * idleAudios.length)]);
-  }, []);
+  // useEffect(() => {
+  //   setAudioUrl(idleAudios[Math.floor(Math.random() * idleAudios.length)]);
+  // }, []);
 
   useEffect(() => {
     socket.on(
@@ -85,10 +85,7 @@ const PlayVideo: React.FC = () => {
               );
           }
         } else {
-          setAudioUrl(
-            audio_url ||
-              idleAudios[Math.floor(Math.random() * idleAudios.length)]
-          );
+          setAudioUrl(audio_url);
           setTimeStart(time_start);
           setIdleTimeEnd(time_end);
           setIsPlaying(true);
@@ -114,7 +111,7 @@ const PlayVideo: React.FC = () => {
         console.error("Error playing audio:", error);
       });
 
-      audioRef.current.loop = idleAudios.includes(audioUrl);
+      // audioRef.current.loop = idleAudios.includes(audioUrl);
     }
   }, [audioUrl]);
   const handleAudioEnded = () => {
@@ -122,7 +119,7 @@ const PlayVideo: React.FC = () => {
     setIsPlaying(false);
     setTimeStart(idleTimeStart);
     setIdleTimeEnd(idleTimeEnd);
-    setAudioUrl(idleAudios[Math.floor(Math.random() * idleAudios.length)]);
+    // setAudioUrl(idleAudios[Math.floor(Math.random() * idleAudios.length)]);
     if (videoRef.current) {
       videoRef.current.currentTime = idleTimeStart;
     }
