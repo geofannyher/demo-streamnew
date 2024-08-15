@@ -110,7 +110,7 @@ const Page = () => {
     value: item.model_name,
     label: item.model_name,
   }));
-
+  const sortedDataQueue = [...dataQueue].sort((a, b) => a.id - b.id);
   return (
     <div className="flex flex-col items-center justify-center h-[100dvh] bg-zinc-50 p-5">
       <div className="container mx-auto ">
@@ -208,7 +208,7 @@ const Page = () => {
                       </th>
                     </tr>
                   ) : (
-                    dataQueue.map((item, index) => (
+                    sortedDataQueue.map((item, index) => (
                       <tr key={index} className="bg-white">
                         <th
                           scope="row"
