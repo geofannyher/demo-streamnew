@@ -11,18 +11,9 @@ const PlayVideo: React.FC = () => {
   const [timeStart, setTimeStart] = useState(0);
   const [idleTimeStart, setIdleTimeStart] = useState(0);
   const [idleTimeEnd, setIdleTimeEnd] = useState(0);
-  const [currentVideoUrl, setCurrentVideoUrl] = useState("");
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [miraIdle, setMiraIdle] = useState("");
-
-  // List of Cloudinary audio URLs for idle state
-  const idleAudios = [
-    "https://res.cloudinary.com/dp8ita8x5/video/upload/v1723623433/videoStream/testMira/baju.mp3",
-    "https://res.cloudinary.com/dp8ita8x5/video/upload/v1723623500/videoStream/testMira/cowok%20casual.mp3",
-    "https://res.cloudinary.com/dp8ita8x5/video/upload/v1723603440/videoStream/testMira/nryo2wwxe3r8jwnfajr3.mp3",
-    "https://res.cloudinary.com/dp8ita8x5/video/upload/v1723603440/videoStream/testMira/qvycdi25kykbzqlddbrb.mp3",
-  ];
 
   const fetchDataModel = async () => {
     try {
@@ -34,8 +25,8 @@ const PlayVideo: React.FC = () => {
         const modelIdle = localStorage.getItem("modelstream");
 
         const setIdleData = (model: any) => {
-          setIdleTimeStart(model.time_start || 0);
-          setIdleTimeEnd(model.time_end || 60);
+          setIdleTimeStart(Number(model.time_start));
+          setIdleTimeEnd(Number(model.time_end));
         };
 
         if (mira && modelIdle === "kokovin") {
@@ -63,45 +54,50 @@ const PlayVideo: React.FC = () => {
     }
   }, [miraIdle, idleTimeStart, idleTimeEnd]);
 
-  // useEffect(() => {
-  //   setAudioUrl(idleAudios[Math.floor(Math.random() * idleAudios.length)]);
-  // }, []);
-
   useEffect(() => {
-    socket.on(
-      "receive_message",
-      ({ video_url, audio_url, time_start, time_end }) => {
-        if (video_url) {
-          setCurrentVideoUrl(video_url);
-          setIsPlaying(true);
-          if (videoRef.current) {
-            videoRef.current.src = video_url;
-            videoRef.current.currentTime = time_start;
-            videoRef.current.muted = false;
-            videoRef.current
-              .play()
-              .catch((error) =>
-                console.error("Error auto-playing video:", error)
-              );
-          }
-        } else {
-          setAudioUrl(audio_url);
-          setTimeStart(time_start);
-          setIdleTimeEnd(time_end);
-          setIsPlaying(true);
-          if (videoRef.current) {
-            videoRef.current.currentTime = time_start;
+    socket.on("receive_message", ({ audio_url, time_start, time_end }) => {
+      if (!audio_url && videoRef.current) {
+        console.log(time_start, time_end);
+        // Jika audio_url null, tetapi time_start dan time_end ada
+        videoRef.current.currentTime = time_start;
+        videoRef.current.muted = false; // Aktifkan audio
+        videoRef.current.play();
+
+        const handleMuteAfterPlaying = () => {
+          if (videoRef.current && videoRef.current.currentTime >= time_end) {
+            videoRef.current.pause();
+            videoRef.current.muted = true; // Mute kembali setelah selesai
+            videoRef.current.currentTime = idleTimeStart;
+            videoRef.current.loop = true; // Aktifkan loop untuk mode idle
             videoRef.current.play();
+            videoRef.current.removeEventListener(
+              "timeupdate",
+              handleMuteAfterPlaying
+            );
+            // Kirim sinyal ke backend bahwa video telah selesai diputar
+            socket.emit("audio_finished");
           }
+        };
+
+        videoRef.current.addEventListener("timeupdate", handleMuteAfterPlaying);
+      } else if (audio_url) {
+        setAudioUrl(audio_url);
+        setTimeStart(time_start);
+        setIdleTimeEnd(time_end);
+        setIsPlaying(true);
+        if (videoRef.current) {
+          videoRef.current.currentTime = time_start;
+          videoRef.current.loop = false; // Nonaktifkan loop untuk mode khusus
+          videoRef.current.play();
         }
       }
-    );
+    });
 
     return () => {
       socket.off("receive_message");
     };
-  }, []);
-
+  }, [idleTimeStart]);
+  console.log("x");
   useEffect(() => {
     if (audioUrl && audioRef.current) {
       audioRef.current.src = audioUrl;
@@ -110,16 +106,14 @@ const PlayVideo: React.FC = () => {
       audioRef.current.play().catch((error) => {
         console.error("Error playing audio:", error);
       });
-
-      // audioRef.current.loop = idleAudios.includes(audioUrl);
     }
   }, [audioUrl]);
+
   const handleAudioEnded = () => {
     console.log("Audio ended");
     setIsPlaying(false);
     setTimeStart(idleTimeStart);
     setIdleTimeEnd(idleTimeEnd);
-    // setAudioUrl(idleAudios[Math.floor(Math.random() * idleAudios.length)]);
     if (videoRef.current) {
       videoRef.current.currentTime = idleTimeStart;
     }
@@ -127,38 +121,9 @@ const PlayVideo: React.FC = () => {
   };
 
   const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      if (
-        currentVideoUrl &&
-        videoRef.current.currentTime >= videoRef.current.duration
-      ) {
-        // Stop the video if it's the one-time video
-        videoRef.current.pause();
-        videoRef.current.currentTime = idleTimeStart;
-        socket.emit("audio_finished");
-        handleVideoEnded();
-      } else if (
-        !currentVideoUrl &&
-        videoRef.current.currentTime >= idleTimeEnd
-      ) {
-        // Loop the video if it's the idle video
-        videoRef.current.currentTime = timeStart;
-        videoRef.current.play();
-      }
-    }
-  };
-
-  const handleVideoEnded = () => {
-    if (currentVideoUrl) {
-      setCurrentVideoUrl("");
-      if (videoRef.current) {
-        videoRef.current.src = videoIdle;
-        videoRef.current.currentTime = idleTimeStart;
-        videoRef.current.muted = true;
-        videoRef.current
-          .play()
-          .catch((error) => console.error("Error auto-playing video:", error));
-      }
+    if (videoRef.current && videoRef.current.currentTime >= idleTimeEnd) {
+      videoRef.current.currentTime = timeStart;
+      videoRef.current.play();
     }
   };
 
@@ -186,14 +151,12 @@ const PlayVideo: React.FC = () => {
                 <video
                   ref={videoRef}
                   autoPlay
-                  // controls
-                  muted={!currentVideoUrl}
+                  muted
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={handleLoadedMetadata}
-                  onEnded={handleVideoEnded}
-                  src={currentVideoUrl || videoIdle}
+                  src={videoIdle}
                 >
-                  <source src={currentVideoUrl || videoIdle} type="video/mp4" />
+                  <source src={videoIdle} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
               )}
@@ -202,14 +165,7 @@ const PlayVideo: React.FC = () => {
         </div>
       </div>
       {audioUrl && (
-        <audio
-          ref={audioRef}
-          aria-valuenow={2}
-          onEnded={handleAudioEnded}
-          autoPlay
-          muted={currentVideoUrl !== ""}
-          controls
-        >
+        <audio ref={audioRef} onEnded={handleAudioEnded} autoPlay controls>
           <source src={audioUrl} type="audio/mpeg" />
           Your browser does not support the audio element.
         </audio>

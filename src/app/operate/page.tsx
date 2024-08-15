@@ -46,7 +46,6 @@ const Page = () => {
           });
           setqueueName("");
           setLoading(false);
-          await fetchData();
         } catch (error) {
           message.error("Terjadi kesalahan saat mengirim data");
         } finally {
@@ -175,7 +174,7 @@ const Page = () => {
             </form>
           </div>
           <div className="md:col-span-4">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto h-96">
               <table className="w-full text-sm text-left rtl:text-right border text-gray-500">
                 <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                   <tr>
