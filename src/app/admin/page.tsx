@@ -65,7 +65,7 @@ const SubmitMessage: React.FC = () => {
       setLoading(true);
       const formData = new FormData();
       formData.append("file", fileUrl);
-      formData.append("upload_preset", "rfc3rxgd");
+      formData.append("upload_preset", "kantor");
 
       const fileUrlString = await uploadFileToCloudinary(fileUrl);
       await supabase.from("action").insert({

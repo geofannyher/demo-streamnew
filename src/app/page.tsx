@@ -15,7 +15,6 @@ const PlayVideo: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [miraIdle, setMiraIdle] = useState("");
-  const [gembulIdle, setGembulIdle] = useState("");
 
   // List of Cloudinary audio URLs for idle state
   const idleAudios = [
@@ -31,22 +30,17 @@ const PlayVideo: React.FC = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const mira = data.find((item) => item.model_name === "mira");
-        const gembul = data.find((item) => item.model_name === "gembul");
+        const mira = data.find((item) => item.model_name === "kokovin");
         const modelIdle = localStorage.getItem("modelstream");
 
         const setIdleData = (model: any) => {
           setIdleTimeStart(model.time_start || 0);
-          setIdleTimeEnd(model.time_end || 10);
+          setIdleTimeEnd(model.time_end || 60);
         };
 
-        if (mira && modelIdle === "mira") {
+        if (mira && modelIdle === "kokovin") {
           setMiraIdle(mira.video_url);
           setIdleData(mira);
-        }
-        if (gembul && modelIdle === "gembul") {
-          setGembulIdle(gembul.video_url);
-          setIdleData(gembul);
         }
       }
     } catch (error) {
@@ -60,18 +54,14 @@ const PlayVideo: React.FC = () => {
 
   useEffect(() => {
     const modelIdle = localStorage.getItem("modelstream");
-    if (modelIdle === "mira" && miraIdle) {
+    if (modelIdle === "kokovin" && miraIdle) {
       setVideoIdle(miraIdle);
-      setTimeStart(idleTimeStart);
-      setIdleTimeEnd(idleTimeEnd);
-    } else if (modelIdle === "gembul" && gembulIdle) {
-      setVideoIdle(gembulIdle);
       setTimeStart(idleTimeStart);
       setIdleTimeEnd(idleTimeEnd);
     } else {
       setVideoIdle("");
     }
-  }, [miraIdle, gembulIdle, idleTimeStart, idleTimeEnd]);
+  }, [miraIdle, idleTimeStart, idleTimeEnd]);
 
   useEffect(() => {
     setAudioUrl(idleAudios[Math.floor(Math.random() * idleAudios.length)]);

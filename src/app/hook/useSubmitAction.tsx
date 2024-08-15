@@ -40,11 +40,11 @@ export const useFormHandler = () => {
     setLoading(true);
     const formData = new FormData();
     formData.append("file", file?.originFileObj);
-    formData.append("upload_preset", "rfc3rxgd");
+    formData.append("upload_preset", "kantor");
 
     try {
       const response = await axios.post(
-        "https://api.cloudinary.com/v1_1/dp8ita8x5/upload",
+        "https://api.cloudinary.com/v1_1/dcd1jeldi/upload",
         formData
       );
       return response?.data?.secure_url;
