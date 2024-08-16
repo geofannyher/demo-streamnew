@@ -11,9 +11,8 @@ const PlayVideo: React.FC = () => {
   const [timeStart, setTimeStart] = useState(0);
   const [idleTimeStart, setIdleTimeStart] = useState(0);
   const [idleTimeEnd, setIdleTimeEnd] = useState(0);
-  const [isPlayingWithoutAudio, setIsPlayingWithoutAudio] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef < HTMLAudioElement > null;
+  const videoRef = useRef < HTMLVideoElement > null;
   const [miraIdle, setMiraIdle] = useState("");
 
   const fetchDataModel = async () => {
@@ -58,11 +57,29 @@ const PlayVideo: React.FC = () => {
   useEffect(() => {
     socket.on("receive_message", ({ audio_url, time_start, time_end }) => {
       if (!audio_url && videoRef.current) {
-        console.log("Playing video from", time_start, "to", time_end);
+        console.log(time_start, time_end);
+        // Jika audio_url null, tetapi time_start dan time_end ada
         videoRef.current.currentTime = time_start;
         videoRef.current.muted = false; // Aktifkan audio
         videoRef.current.play();
-        setIsPlayingWithoutAudio(true); // Set state untuk menandakan video tanpa audio sedang diputar
+
+        const handleMuteAfterPlaying = () => {
+          if (videoRef.current && videoRef.current.currentTime >= time_end) {
+            videoRef.current.pause();
+            videoRef.current.muted = true; // Mute kembali setelah selesai
+            videoRef.current.currentTime = idleTimeStart;
+            videoRef.current.loop = true; // Aktifkan loop untuk mode idle
+            videoRef.current.play();
+            videoRef.current.removeEventListener(
+              "timeupdate",
+              handleMuteAfterPlaying
+            );
+            // Kirim sinyal ke backend bahwa video telah selesai diputar
+            socket.emit("audio_finished");
+          }
+        };
+
+        videoRef.current.addEventListener("timeupdate", handleMuteAfterPlaying);
       } else if (audio_url) {
         setAudioUrl(audio_url);
         setTimeStart(time_start);
@@ -70,12 +87,8 @@ const PlayVideo: React.FC = () => {
         setIsPlaying(true);
         if (videoRef.current) {
           videoRef.current.currentTime = time_start;
-          videoRef.current.muted = true; // Mute video saat audio diputar
           videoRef.current.loop = false; // Nonaktifkan loop untuk mode khusus
-          videoRef.current.play().catch((error) => {
-            console.error("Error playing video:", error);
-          });
-          setIsPlayingWithoutAudio(false); // Reset state ketika audio diputar
+          videoRef.current.play();
         }
       }
     });
@@ -84,7 +97,7 @@ const PlayVideo: React.FC = () => {
       socket.off("receive_message");
     };
   }, [idleTimeStart]);
-
+  console.log("x");
   useEffect(() => {
     if (audioUrl && audioRef.current) {
       audioRef.current.src = audioUrl;
@@ -99,35 +112,18 @@ const PlayVideo: React.FC = () => {
   const handleAudioEnded = () => {
     console.log("Audio ended");
     setIsPlaying(false);
+    setTimeStart(idleTimeStart);
+    setIdleTimeEnd(idleTimeEnd);
     if (videoRef.current) {
       videoRef.current.currentTime = idleTimeStart;
-      videoRef.current.play(); // Memutar kembali video idle
     }
     socket.emit("audio_finished");
   };
 
   const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      if (
-        isPlayingWithoutAudio &&
-        videoRef.current.currentTime >= idleTimeEnd
-      ) {
-        console.log(
-          "Finished playing video without audio, going back to idle."
-        );
-        videoRef.current.currentTime = idleTimeStart; // Reset ke waktu awal idle
-        videoRef.current.muted = true; // Matikan audio saat kembali ke idle
-        videoRef.current.play(); // Putar video idle
-        setIsPlayingWithoutAudio(false); // Reset state
-      } else if (
-        !isPlayingWithoutAudio &&
-        videoRef.current.currentTime >= timeStart &&
-        videoRef.current.currentTime >= idleTimeEnd
-      ) {
-        videoRef.current.currentTime = idleTimeStart;
-        videoRef.current.muted = true; // Matikan audio saat kembali ke idle
-        videoRef.current.play(); // Putar video idle
-      }
+    if (videoRef.current && videoRef.current.currentTime >= idleTimeEnd) {
+      videoRef.current.currentTime = timeStart;
+      videoRef.current.play();
     }
   };
 
@@ -135,9 +131,7 @@ const PlayVideo: React.FC = () => {
     if (videoRef.current) {
       videoRef.current.currentTime = timeStart;
       if (isPlaying) {
-        videoRef.current.play().catch((error) => {
-          console.error("Error playing video:", error);
-        });
+        videoRef.current.play();
       }
     }
   };
