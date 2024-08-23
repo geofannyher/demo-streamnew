@@ -179,7 +179,7 @@ const PlayVideo: React.FC = () => {
                   onTimeUpdate={handleTimeUpdate}
                   autoPlay
                   muted
-                  controls
+                  // controls
                   src={videoIdle}
                 >
                   <source src={videoIdle} type="video/mp4" />
