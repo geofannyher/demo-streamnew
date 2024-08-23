@@ -124,6 +124,7 @@ const PlayVideo: React.FC = () => {
     playIdleVideo();
     socket.emit("audio_finished");
   };
+
   const handleTimeUpdate = () => {
     if (videoRef.current) {
       if (
@@ -148,6 +149,7 @@ const PlayVideo: React.FC = () => {
             console.error("gagal play setelah hanya video", error);
           })
           .finally(() => {
+            socket.emit("audio_finished");
             setIsOnlyAudio(false);
             setAudioUrl("");
           });
