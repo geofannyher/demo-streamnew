@@ -22,10 +22,14 @@ const PlayVideo: React.FC = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const models = data.find((item) => item.model_name === "kokovin");
         const modelIdle = localStorage.getItem("modelstream");
+        const models = data.find((item) => item.model_name === modelIdle);
 
         if (models && modelIdle === "kokovin") {
+          setModelStream(models.video_url);
+          setIdleTimeStart(Number(models.time_start));
+          setIdleTimeEnd(Number(models.time_end));
+        } else if (models && modelIdle === "cinda") {
           setModelStream(models.video_url);
           setIdleTimeStart(Number(models.time_start));
           setIdleTimeEnd(Number(models.time_end));
@@ -43,6 +47,8 @@ const PlayVideo: React.FC = () => {
   useEffect(() => {
     const modelIdle = localStorage.getItem("modelstream");
     if (modelIdle === "kokovin" && modelStream) {
+      setVideoIdle(modelStream);
+    } else if (modelIdle === "cinda" && modelStream) {
       setVideoIdle(modelStream);
     }
   }, [modelStream]);
