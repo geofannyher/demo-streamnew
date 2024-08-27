@@ -16,6 +16,20 @@ const Page = () => {
   const { dataQueue, loading: dataLoading } = useQueueData({
     model_name: model,
   });
+  const checkAction = async ({
+    model,
+    code,
+  }: {
+    model: string;
+    code: string;
+  }) => {
+    const res: PostgrestSingleResponse<any> = await supabase
+      .from("action")
+      .select("*")
+      .eq("code", code)
+      .eq("model_name", model);
+    return res;
+  };
   const handleSendQueue = async () => {
     if (!model) {
       return message.error("Pilih model terlebih dahulu");
@@ -25,15 +39,13 @@ const Page = () => {
       const items = item?.code.toString();
       return queueName.includes(items);
     });
+
     const checkMessage = queueName.length;
     if (codeExists) {
       const regex = /^[^\s]+/;
       const match: any = queueName.match(regex);
-      const res: PostgrestSingleResponse<any> = await supabase
-        .from("action")
-        .select("*")
-        .eq("code", match[0]);
-
+      const res = await checkAction({ code: match[0], model });
+      console.log(res);
       if (checkMessage > 2) {
         try {
           const newMessage = queueName.replace(regex, "").trim();
@@ -52,11 +64,7 @@ const Page = () => {
           setLoading(false);
         }
       } else {
-        const res: PostgrestSingleResponse<any> = await supabase
-          .from("action")
-          .select("*")
-          .eq("code", match[0]);
-
+        const res = await checkAction({ code: match[0], model });
         await supabase.from("queueTable").insert({
           action_name: res?.data[0]?.action_name,
           text: "ready",
@@ -67,6 +75,7 @@ const Page = () => {
         setqueueName("");
         setLoading(false);
       }
+      setLoading(false);
     } else {
       setLoading(false);
       return message.error("Masukkan kode yang valid");
@@ -152,7 +161,7 @@ const Page = () => {
                 <textarea
                   disabled={loading}
                   onChange={(e) => setqueueName(e?.target?.value)}
-                  value={queueName} // Bind the input value to the state
+                  value={queueName}
                   className="w-full h-80 p-2 border rounded"
                   placeholder="Please Input..."
                   onKeyDown={(e) => {
