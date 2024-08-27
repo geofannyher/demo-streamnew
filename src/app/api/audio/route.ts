@@ -2,10 +2,10 @@ import axios from "axios";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const { text } = await req.json();
+  const { text, id_audio } = await req.json();
   try {
     const result = await axios.post(
-      "https://api.elevenlabs.io/v1/text-to-speech/P60iQaAtU5y3hCqR2Dnu",
+      `https://api.elevenlabs.io/v1/text-to-speech/${id_audio}`,
       {
         text: text,
         model_id: "eleven_multilingual_v2",

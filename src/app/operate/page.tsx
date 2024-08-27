@@ -55,6 +55,7 @@ const Page = () => {
             queue_num: res?.data[0]?.code,
             time_start: res?.data[0]?.time_start,
             time_end: res?.data[0]?.time_end,
+            id_audio: res?.data[0]?.id_audio,
           });
           setqueueName("");
           setLoading(false);
@@ -71,6 +72,7 @@ const Page = () => {
           queue_num: res?.data[0]?.code,
           time_start: res?.data[0]?.time_start,
           time_end: res?.data[0]?.time_end,
+          id_audio: res?.data[0]?.id_audio,
         });
         setqueueName("");
         setLoading(false);
