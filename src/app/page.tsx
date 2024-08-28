@@ -73,6 +73,7 @@ const PlayVideo: React.FC = () => {
       time_end: number;
     }) => {
       if (audio_url) {
+        console.log(audioUrl);
         if (audio_url === "only") {
           console.log("on");
           setIsOnlyAudio(true);
