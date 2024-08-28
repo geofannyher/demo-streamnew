@@ -46,6 +46,7 @@ const PlayVideo: React.FC = () => {
 
   useEffect(() => {
     const modelIdle = localStorage.getItem("modelstream");
+    console.log(modelStream, "model");
     if (modelIdle === "kokovin" && modelStream) {
       setVideoIdle(modelStream);
     } else if (modelIdle === "cinda" && modelStream) {
@@ -73,7 +74,6 @@ const PlayVideo: React.FC = () => {
       time_end: number;
     }) => {
       if (audio_url) {
-        console.log(audioUrl);
         if (audio_url === "only") {
           console.log("on");
           setIsOnlyAudio(true);
@@ -88,6 +88,10 @@ const PlayVideo: React.FC = () => {
         }
       }
     };
+
+    socket.on("connection", () => {
+      console.log("Connected to WebSocket");
+    });
 
     socket.on("receive_message", handleReceiveMessage);
     return () => {
