@@ -89,10 +89,6 @@ const PlayVideo: React.FC = () => {
       }
     };
 
-    socket.on("connection", () => {
-      console.log("Connected to WebSocket");
-    });
-
     socket.on("receive_message", handleReceiveMessage);
     return () => {
       socket.off("receive_message", handleReceiveMessage);
