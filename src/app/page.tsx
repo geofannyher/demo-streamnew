@@ -33,6 +33,10 @@ const PlayVideo: React.FC = () => {
           setModelStream(models.video_url);
           setIdleTimeStart(Number(models.time_start));
           setIdleTimeEnd(Number(models.time_end));
+        } else if (models && modelIdle === "nyiroro") {
+          setModelStream(models.video_url);
+          setIdleTimeStart(Number(models.time_start));
+          setIdleTimeEnd(Number(models.time_end));
         }
       }
     } catch (error) {
@@ -50,6 +54,8 @@ const PlayVideo: React.FC = () => {
     if (modelIdle === "kokovin" && modelStream) {
       setVideoIdle(modelStream);
     } else if (modelIdle === "cinda" && modelStream) {
+      setVideoIdle(modelStream);
+    } else if (modelIdle === "nyiroro" && modelStream) {
       setVideoIdle(modelStream);
     }
   }, [modelStream]);
