@@ -1,23 +1,21 @@
 "use client";
-import { socket } from "@/lib/socket";
-import { supabase } from "@/lib/supabase";
-import React, { useRef, useState, useEffect } from "react";
-import ReactPlayer from "react-player";
 
-const VideoPlayer = () => {
-  const videoRef = useRef<ReactPlayer>(null);
-  const [isClient, setIsClient] = useState(false);
+import { supabase } from "@/lib/supabase";
+import React, { useEffect, useRef, useState } from "react";
+import { socket } from "@/lib/socket";
+
+const PlayVideo: React.FC = () => {
   const [videoIdle, setVideoIdle] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
   const [idleTimeStart, setIdleTimeStart] = useState(0);
-  const [idleTimeEnd, setIdleTimeEnd] = useState(10);
+  const [idleTimeEnd, setIdleTimeEnd] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [timeStart, setTimeStart] = useState(0);
   const [timeEnd, setTimeEnd] = useState(0);
   const [modelStream, setModelStream] = useState("");
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [isOnlyAudio, setIsOnlyAudio] = useState(true);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isOnlyAudio, setIsOnlyAudio] = useState(false);
   const fetchDataModel = async () => {
     try {
       const { data, error } = await supabase.from("model").select("*");
@@ -50,11 +48,9 @@ const VideoPlayer = () => {
     }
   };
 
-  const playIdleVideo = () => {
-    if (videoRef.current && !isAudioPlaying) {
-      videoRef.current.seekTo(idleTimeStart);
-    }
-  };
+  useEffect(() => {
+    fetchDataModel();
+  }, []);
 
   useEffect(() => {
     const modelIdle = localStorage.getItem("modelstream");
@@ -70,10 +66,14 @@ const VideoPlayer = () => {
     }
   }, [modelStream]);
 
-  useEffect(() => {
-    setIsClient(true);
-    fetchDataModel();
-  }, []);
+  const playIdleVideo = () => {
+    if (videoRef.current && !isAudioPlaying) {
+      videoRef.current.currentTime = idleTimeStart;
+      videoRef.current.play().catch((error) => {
+        console.error("Error playing video:", error);
+      });
+    }
+  };
 
   useEffect(() => {
     const handleReceiveMessage = ({
@@ -86,7 +86,6 @@ const VideoPlayer = () => {
       time_end: number;
     }) => {
       if (audio_url) {
-        console.log(audio_url);
         if (audio_url === "only") {
           console.log("on");
           setIsOnlyAudio(true);
@@ -112,7 +111,10 @@ const VideoPlayer = () => {
     console.log(isOnlyAudio, audioUrl, "cek");
     if (audioUrl && audioUrl !== "only" && videoRef.current) {
       setIsAudioPlaying(true);
-      videoRef.current.seekTo(timeStart); // Set the video start time
+      videoRef.current.currentTime = timeStart; // Set the video start time
+      videoRef.current.play().catch((error) => {
+        console.error("Error playing video:", error);
+      });
 
       if (audioRef.current) {
         audioRef.current.src = audioUrl;
@@ -125,41 +127,59 @@ const VideoPlayer = () => {
       // Handle "only" case, start video without audio
       console.log("play lah boi");
       if (videoRef.current) {
-        videoRef.current.seekTo(timeStart);
-        setIsMuted(false);
+        videoRef.current.currentTime = timeStart;
+        videoRef.current.muted = false; // Unmute video
+        videoRef.current.play().catch((error) => {
+          console.error("Error playing video:", error);
+        });
       }
     } else {
       setIsAudioPlaying(false);
     }
   }, [audioUrl]);
 
-  const handleProgress = (item: any) => {
-    if (videoRef && videoRef.current) {
-      if (audioUrl && audioUrl !== "only" && item?.playedSeconds >= timeEnd) {
-        videoRef.current.seekTo(0);
+  const handleAudioEnded = () => {
+    setAudioUrl("");
+    setIsAudioPlaying(false);
+    playIdleVideo();
+    socket.emit("audio_finished");
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      if (
+        audioUrl &&
+        audioUrl !== "only" &&
+        videoRef.current.currentTime >= timeEnd
+      ) {
+        videoRef.current.currentTime = timeStart;
+        videoRef.current.play().catch((error) => {
+          console.error("gagal play saat ada audio", error);
+        });
       } else if (
         isOnlyAudio &&
         audioUrl == "only" &&
-        item?.playedSeconds >= timeEnd
+        videoRef.current.currentTime >= timeEnd
       ) {
-        videoRef.current.seekTo(idleTimeStart);
-        setIsMuted(true);
-        setAudioUrl("");
-      } else if (!audioUrl && item?.playedSeconds >= idleTimeEnd) {
-        videoRef.current.seekTo(idleTimeStart);
+        videoRef.current.currentTime = idleTimeStart;
+        videoRef.current.muted = true;
+        videoRef.current
+          .play()
+          .catch((error) => {
+            console.error("gagal play setelah hanya video", error);
+          })
+          .finally(() => {
+            socket.emit("audio_finished");
+            setIsOnlyAudio(false);
+            setAudioUrl("");
+          });
+      } else if (!audioUrl && videoRef.current.currentTime >= idleTimeEnd) {
+        videoRef.current.currentTime = idleTimeStart;
+        videoRef.current.play().catch((error) => {
+          console.error("gagal play saat video kembali ke idle", error);
+        });
       }
     }
-  };
-
-  if (!isClient) {
-    return null;
-  }
-
-  const handleAudioEnded = () => {
-    setAudioUrl("");
-    playIdleVideo();
-    setIsAudioPlaying(false);
-    socket.emit("audio_finished");
   };
 
   return (
@@ -174,16 +194,17 @@ const VideoPlayer = () => {
           <div className="flex h-full flex-col items-center justify-center">
             <div className="relative">
               {videoIdle && (
-                <ReactPlayer
+                <video
                   ref={videoRef}
-                  url={"https://youtu.be/ydzN1Pv7QcQ"}
-                  playing={true}
-                  onProgress={handleProgress}
-                  controls={true}
-                  height={896}
-                  width={414}
-                  muted={isMuted}
-                />
+                  onTimeUpdate={handleTimeUpdate}
+                  autoPlay
+                  muted
+                  // controls
+                  src={videoIdle}
+                >
+                  <source src={videoIdle} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
               )}
             </div>
           </div>
@@ -199,4 +220,4 @@ const VideoPlayer = () => {
   );
 };
 
-export default VideoPlayer;
+export default PlayVideo;
