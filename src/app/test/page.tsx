@@ -110,7 +110,7 @@ const Page = () => {
     }
   };
   useEffect(() => {
-    getData();
+    getDataComment();
   }, []);
 
   return (
@@ -118,7 +118,7 @@ const Page = () => {
       <div className="p-10">
         <h1>Ini Hasil </h1>
         <button
-          onClick={getData}
+          onClick={getDataComment}
           className="px-4 py-2 hover:cursor-pointer rounded-md bg-violet-500 text-white font-semibold text-sm"
         >
           Fetch
