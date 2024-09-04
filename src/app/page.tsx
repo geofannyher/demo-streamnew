@@ -172,7 +172,6 @@ const VideoPlayer = () => {
                 <ReactPlayer
                   ref={videoRef}
                   url={videoIdle}
-                  controls
                   playing={true}
                   onProgress={handleProgress}
                   height={896}
