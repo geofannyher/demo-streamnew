@@ -6,7 +6,6 @@ import ReactPlayer from "react-player";
 
 const VideoPlayer = () => {
   const videoRef = useRef<ReactPlayer>(null);
-  const [isClient, setIsClient] = useState(false);
   const [videoIdle, setVideoIdle] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
   const [idleTimeStart, setIdleTimeStart] = useState(0);
@@ -71,7 +70,6 @@ const VideoPlayer = () => {
   }, [modelStream]);
 
   useEffect(() => {
-    setIsClient(true);
     fetchDataModel();
   }, []);
 
@@ -143,6 +141,7 @@ const VideoPlayer = () => {
         item?.playedSeconds >= timeEnd
       ) {
         videoRef.current.seekTo(idleTimeStart);
+        socket.emit("audio_finished");
         setIsMuted(true);
         setAudioUrl("");
       } else if (!audioUrl && item?.playedSeconds >= idleTimeEnd) {
@@ -150,10 +149,6 @@ const VideoPlayer = () => {
       }
     }
   };
-
-  if (!isClient) {
-    return null;
-  }
 
   const handleAudioEnded = () => {
     setAudioUrl("");
@@ -176,10 +171,10 @@ const VideoPlayer = () => {
               {videoIdle && (
                 <ReactPlayer
                   ref={videoRef}
-                  url={"https://youtu.be/ydzN1Pv7QcQ"}
+                  url={videoIdle}
+                  controls
                   playing={true}
                   onProgress={handleProgress}
-                  controls={true}
                   height={896}
                   width={414}
                   muted={isMuted}

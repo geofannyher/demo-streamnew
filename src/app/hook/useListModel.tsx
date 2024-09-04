@@ -10,7 +10,6 @@ export const useListModel = () => {
   const getDataModel = async () => {
     const { data, error } = await supabase.from("action").select("model_name");
 
-    console.log(data);
     if (error) {
       console.log(error);
     } else {

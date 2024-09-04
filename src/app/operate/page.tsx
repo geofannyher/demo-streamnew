@@ -45,13 +45,30 @@ const Page = () => {
       const regex = /^[^\s]+/;
       const match: any = queueName.match(regex);
       const res = await checkAction({ code: match[0], model });
-      console.log(res);
-      if (checkMessage > 2) {
-        try {
-          const newMessage = queueName.replace(regex, "").trim();
+      if (res?.data && res?.data.length !== 0) {
+        if (checkMessage > 2) {
+          try {
+            const newMessage = queueName.replace(regex, "").trim();
+            await supabase.from("queueTable").insert({
+              action_name: res?.data[0]?.action_name,
+              text: newMessage,
+              queue_num: res?.data[0]?.code,
+              time_start: res?.data[0]?.time_start,
+              time_end: res?.data[0]?.time_end,
+              id_audio: res?.data[0]?.id_audio,
+            });
+            setqueueName("");
+            setLoading(false);
+          } catch (error) {
+            message.error("Terjadi kesalahan saat mengirim data");
+          } finally {
+            setLoading(false);
+          }
+        } else {
+          const res = await checkAction({ code: match[0], model });
           await supabase.from("queueTable").insert({
             action_name: res?.data[0]?.action_name,
-            text: newMessage,
+            text: "ready",
             queue_num: res?.data[0]?.code,
             time_start: res?.data[0]?.time_start,
             time_end: res?.data[0]?.time_end,
@@ -59,23 +76,10 @@ const Page = () => {
           });
           setqueueName("");
           setLoading(false);
-        } catch (error) {
-          message.error("Terjadi kesalahan saat mengirim data");
-        } finally {
-          setLoading(false);
         }
       } else {
-        const res = await checkAction({ code: match[0], model });
-        await supabase.from("queueTable").insert({
-          action_name: res?.data[0]?.action_name,
-          text: "ready",
-          queue_num: res?.data[0]?.code,
-          time_start: res?.data[0]?.time_start,
-          time_end: res?.data[0]?.time_end,
-          id_audio: res?.data[0]?.id_audio,
-        });
-        setqueueName("");
         setLoading(false);
+        return message.error("kode tidak ada dalam database");
       }
       setLoading(false);
     } else {
@@ -165,7 +169,7 @@ const Page = () => {
                   onChange={(e) => setqueueName(e?.target?.value)}
                   value={queueName}
                   className="w-full h-80 p-2 border rounded"
-                  placeholder="Please Input..."
+                  placeholder="Masukkan kode atau kode + pesan ... seperti 'a Halo' atau 'a' "
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -227,7 +231,7 @@ const Page = () => {
                         >
                           {item.action_name}
                         </th>
-                        <td className="px-6 py-4">{item.code}</td>
+                        <td className="px-6 py-4">{item.code.toUpperCase()}</td>
                       </tr>
                     ))
                   )}

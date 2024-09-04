@@ -1,131 +1,157 @@
-"use client";
-import { ApifyClient } from "apify-client";
-import axios from "axios";
-import React, { useEffect, useRef } from "react";
+// "use client";
+// import { TDataChat, Tgift, TNewJoin, TRoomView } from "@/shared/Type/TestType";
+// import { ApifyClient } from "apify-client";
+// import axios from "axios";
+// import React, { useEffect, useRef, useState } from "react";
 
-const Page = () => {
-  const hasFetched = useRef(false);
-  const api = "apify_api_f9OdukfCNCgWuLfPJbBP9QqcLztmAf2dRjPC";
-  const client = new ApifyClient({
-    token: api,
-  });
+// // Number of viewers: ...
+// // Last 10 comments:
+// // {username, comment,..}
+// // Last 10 new joiner:
+// // {user, user, user}
+// // Last 10 gifter
+// // {user, giftvalue}
+// // Last 10 buy
+// // {...,...,...}
+// // Last actions
+// // {...}
 
-  const input = {
-    usernames: ["im.rahmay"],
-    event_chat: true,
-    event_gift: false,
-    event_member: false,
-    event_follow: false,
-    event_share: false,
-    event_like: false,
-    event_subscribe: false,
-    event_roomUser: false,
-    event_emote: false,
-    event_envelope: false,
-    event_questionNew: false,
-    event_liveIntro: false,
-    event_status: true,
-    event_linkMicBattle: false,
-    event_linkMicArmies: false,
-    end_allStreamsEnds: true,
-    proxyConfiguration: {
-      useApifyProxy: true,
-      apifyProxyGroups: ["RESIDENTIAL"],
-    },
-  };
+// const Page = () => {
+//   const hasFetched = useRef(false);
+//   const [loading, setLoading] = useState(false);
+//   const api = "apify_api_lohc7QCpnj6QMyyu7ohz5VqtoNQEAW3YxOue";
+//   const client = new ApifyClient({
+//     token: api,
+//   });
 
-  // const submitToApi = async () => {
-  //   try {
-  //     const res = await axios.post("https://chatx-api.hadiwijaya.co/chat", {
-  //       comments: dataComment,
-  //     });
-  //     console.log("Response from API:", res.data);
-  //   } catch (error) {
-  //     console.error("Error submitting data to API:", error);
-  //   }
-  // };
+//   const input = {
+//     usernames: ["fikinaki"],
+//     event_chat: true, //comment live
+//     event_gift: true, //gift live
+//     event_member: true, //member join live
+//     event_follow: false,
+//     event_share: false,
+//     event_like: false,
+//     event_subscribe: false,
+//     event_roomUser: true, //total view live
+//     event_emote: false,
+//     event_envelope: false,
+//     event_questionNew: false,
+//     event_liveIntro: false,
+//     event_status: true,
+//     event_linkMicBattle: false,
+//     event_linkMicArmies: false,
+//     end_allStreamsEnds: true,
+//     proxyConfiguration: {
+//       useApifyProxy: true,
+//       apifyProxyGroups: ["RESIDENTIAL"],
+//     },
+//   };
 
-  const getDataComment = async () => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
+//   // const submitToApi = async () => {
+//   //   try {
+//   //     const res = await axios.post("https://chatx-api.hadiwijaya.co/chat", {
+//   //       comments: dataComment,
+//   //     });
+//   //     console.log("Response from API:", res.data);
+//   //   } catch (error) {
+//   //     console.error("Error submitting data to API:", error);
+//   //   }
+//   // };
 
-    try {
-      console.log("Starting actor...");
-      const run = await client.actor("iBGygcuAxeHUkYsq9").call(input, {
-        timeout: 20,
-        memory: 128,
-        build: "latest",
-      });
+//   const getDataComment = async () => {
+//     setLoading(true);
+//     if (hasFetched.current) return;
+//     hasFetched.current = true;
 
-      console.log("Fetching results from dataset...");
-      const { items } = await client.dataset(run.defaultDatasetId).listItems();
-      const relevantItems = items.slice(1);
-      if (relevantItems.length > 2) {
-        const dataComment = relevantItems.map((item) => ({
-          username: item.nickname,
-          comment: item.comment,
-        }));
+//     try {
+//       console.log("Starting actor...");
+//       const run = await client.actor("iBGygcuAxeHUkYsq9").call(input, {
+//         timeout: 20,
+//         memory: 128,
+//         build: "latest",
+//       });
 
-        // Kirim data yang sudah diformat ke API lain
-        // await submitToApi();
+//       console.log("Fetching results from dataset...");
+//       const { items } = await client.dataset(run.defaultDatasetId).listItems();
+//       if (items.length > 0) {
+//         const relevantItems = items.slice(1);
+//         if (relevantItems.length > 2) {
+//           const chatData: TDataChat[] = [];
+//           const newJoinData: TNewJoin[] = [];
+//           const giftData: Tgift[] = [];
+//           let roomUserData: TRoomView = {};
 
-        console.log(dataComment);
-      }
-    } catch (error) {
-      console.log(error, "error");
-    } finally {
-      hasFetched.current = false;
-    }
-  };
-  const getDataJoin = async () => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
+//           relevantItems.forEach((item) => {
+//             if (
+//               item.eventType === "chat" &&
+//               item.comment !== undefined &&
+//               chatData.length < 10
+//             ) {
+//               chatData.push({
+//                 username: item.nickname,
+//                 comment: item.comment,
+//               });
+//             } else if (item.eventType === "gift" && giftData.length < 10) {
+//               giftData.push({
+//                 username: item.nickname,
+//                 giftName: item.giftName,
+//               });
+//             } else if (item.eventType === "member" && giftData.length < 10) {
+//               newJoinData.push({
+//                 username: item.nickname,
+//               });
+//             } else if (item.eventType === "roomUser") {
+//               roomUserData = {
+//                 viewer: item.viewerCount,
+//               };
+//             }
+//           });
 
-    try {
-      console.log("Starting actor...");
-      const run = await client.actor("iBGygcuAxeHUkYsq9").call(input, {
-        timeout: 20,
-        memory: 128,
-        build: "latest",
-      });
+//           const formattedData = {
+//             chat: chatData,
+//             gift: giftData,
+//             newMember: newJoinData,
+//             roomUser: roomUserData,
+//           };
 
-      console.log("Fetching results from dataset...");
-      const { items } = await client.dataset(run.defaultDatasetId).listItems();
-      const relevantItems = items.slice(1);
-      if (relevantItems.length > 2) {
-        const dataComment = relevantItems.map((item) => ({
-          username: item.nickname,
-          comment: item.comment,
-        }));
+//           setLoading(false);
 
-        // Kirim data yang sudah diformat ke API lain
-        // await submitToApi();
+//           console.log("Success fetch dataset...");
+//           console.log(formattedData);
+//         }
+//       } else {
+//         console.log("none data");
+//       }
+//     } catch (error) {
+//       setLoading(false);
+//       console.log(error, "error");
+//     } finally {
+//       setLoading(false);
+//       hasFetched.current = false;
+//     }
+//   };
 
-        console.log(dataComment);
-      }
-    } catch (error) {
-      console.log(error, "error");
-    } finally {
-      hasFetched.current = false;
-    }
-  };
-  useEffect(() => {
-    getDataComment();
-  }, []);
+//   useEffect(() => {
+//     getDataComment();
+//   }, []);
 
-  return (
-    <div className="container mx-auto">
-      <div className="p-10">
-        <h1>Ini Hasil </h1>
-        <button
-          onClick={getDataComment}
-          className="px-4 py-2 hover:cursor-pointer rounded-md bg-violet-500 text-white font-semibold text-sm"
-        >
-          Fetch
-        </button>
-      </div>
-    </div>
-  );
-};
+//   return (
+//     <div className="container mx-auto">
+//       <div className="p-10">
+//         <h1>Ini Hasil </h1>
+//         <button
+//           disabled={loading}
+//           onClick={getDataComment}
+//           className={`${
+//             loading ? "cursor-not-allowed" : "cursor-pointer"
+//           }px-4 py-2 hover:cursor-pointer rounded-md bg-violet-500 text-white font-semibold text-sm`}
+//         >
+//           {loading ? "Loading..." : "fetch"}
+//         </button>
+//       </div>
+//     </div>
+//   );
+// };
 
-export default Page;
+// export default Page;
