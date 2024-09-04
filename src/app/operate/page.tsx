@@ -26,7 +26,7 @@ const Page = () => {
     const res: PostgrestSingleResponse<any> = await supabase
       .from("action")
       .select("*")
-      .eq("code", code)
+      .eq("code", code.toLowerCase())
       .eq("model_name", model);
     return res;
   };
@@ -231,7 +231,9 @@ const Page = () => {
                         >
                           {item.action_name}
                         </th>
-                        <td className="px-6 py-4">{item.code.toUpperCase()}</td>
+                        <td className="px-6 py-4">
+                          {item.code.toLocaleLowerCase()}
+                        </td>
                       </tr>
                     ))
                   )}
