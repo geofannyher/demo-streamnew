@@ -173,6 +173,7 @@ const VideoPlayer = () => {
                   ref={videoRef}
                   url={videoIdle}
                   playing={true}
+                  controls
                   onProgress={handleProgress}
                   height={896}
                   width={414}
