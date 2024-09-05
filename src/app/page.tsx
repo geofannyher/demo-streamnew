@@ -175,8 +175,8 @@ const VideoPlayer = () => {
                   playing={true}
                   controls
                   onProgress={handleProgress}
-                  height={896}
-                  width={414}
+                  height="calc(100vh)" // Set tinggi penuh
+                  width="150%" // Sesuaikan lebar dengan parent div
                   muted={isMuted}
                 />
               )}
