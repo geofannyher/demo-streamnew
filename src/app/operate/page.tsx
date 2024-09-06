@@ -93,20 +93,6 @@ const Page = () => {
   const handleChange = (value: string) => {
     setModel(value);
   };
-  supabase
-    .channel("schema-db-changes")
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "queueTable",
-      },
-      () => {
-        fetchData();
-      }
-    )
-    .subscribe();
 
   const fetchData = async () => {
     const getQueueTable: any = await supabase.from("queueTable").select("*");
@@ -115,6 +101,26 @@ const Page = () => {
 
   useEffect(() => {
     fetchData();
+
+    const channel = supabase
+      .channel("schema-db-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "queueTable",
+        },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    // Clean up subscription on component unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleChangeStream = (value: string) => {
