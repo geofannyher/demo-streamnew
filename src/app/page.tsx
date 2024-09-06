@@ -17,6 +17,7 @@ const VideoPlayer = () => {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isOnlyAudio, setIsOnlyAudio] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
+
   const fetchDataModel = async () => {
     try {
       const { data, error } = await supabase.from("model").select("*");
@@ -26,19 +27,7 @@ const VideoPlayer = () => {
         const modelIdle = localStorage.getItem("modelstream");
         const models = data.find((item) => item.model_name === modelIdle);
 
-        if (models && modelIdle === "kokovin") {
-          setModelStream(models.video_url);
-          setIdleTimeStart(Number(models.time_start));
-          setIdleTimeEnd(Number(models.time_end));
-        } else if (models && modelIdle === "cinda") {
-          setModelStream(models.video_url);
-          setIdleTimeStart(Number(models.time_start));
-          setIdleTimeEnd(Number(models.time_end));
-        } else if (models && modelIdle === "nyiroro") {
-          setModelStream(models.video_url);
-          setIdleTimeStart(Number(models.time_start));
-          setIdleTimeEnd(Number(models.time_end));
-        } else if (models && modelIdle === "naura") {
+        if (models) {
           setModelStream(models.video_url);
           setIdleTimeStart(Number(models.time_start));
           setIdleTimeEnd(Number(models.time_end));
@@ -57,14 +46,8 @@ const VideoPlayer = () => {
 
   useEffect(() => {
     const modelIdle = localStorage.getItem("modelstream");
-    console.log(modelStream, "model");
-    if (modelIdle === "kokovin" && modelStream) {
-      setVideoIdle(modelStream);
-    } else if (modelIdle === "cinda" && modelStream) {
-      setVideoIdle(modelStream);
-    } else if (modelIdle === "nyiroro" && modelStream) {
-      setVideoIdle(modelStream);
-    } else if (modelIdle === "naura" && modelStream) {
+
+    if (modelIdle && modelStream) {
       setVideoIdle(modelStream);
     }
   }, [modelStream]);
