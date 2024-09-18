@@ -2,10 +2,13 @@
 
 import React, { useEffect, useState } from "react";
 import { useQueueData } from "../hook/useQueueData";
-import { Form, message, Select } from "antd";
+import { Button, Form, Input, message, Select } from "antd";
 import { useListModel } from "../hook/useListModel";
 import { supabase } from "@/lib/supabase";
-import { PostgrestSingleResponse } from "@supabase/supabase-js";
+import { getDataAction } from "../services/action/action.service";
+import { useFetchDataComment } from "../hook/useFetchComment";
+import { useChangeTime } from "../hook/useChangeTime";
+import { LoadingOutlined } from "@ant-design/icons";
 
 const Page = () => {
   const { data } = useListModel();
@@ -16,20 +19,9 @@ const Page = () => {
   const { dataQueue, loading: dataLoading } = useQueueData({
     model_name: model,
   });
-  const checkAction = async ({
-    model,
-    code,
-  }: {
-    model: string;
-    code: string;
-  }) => {
-    const res: PostgrestSingleResponse<any> = await supabase
-      .from("action")
-      .select("*")
-      .eq("code", code.toLowerCase())
-      .eq("model_name", model);
-    return res;
-  };
+  const { handleChangeTime, time, handleSave } = useChangeTime();
+  const { status } = useFetchDataComment();
+
   const handleSendQueue = async () => {
     if (!model) {
       return message.error("Pilih model terlebih dahulu");
@@ -44,7 +36,7 @@ const Page = () => {
     if (codeExists) {
       const regex = /^[^\s]+/;
       const match: any = queueName.match(regex);
-      const res = await checkAction({ code: match[0], model });
+      const res = await getDataAction({ code: match[0], model });
       if (res?.data && res?.data.length !== 0) {
         if (checkMessage > 2) {
           try {
@@ -65,7 +57,7 @@ const Page = () => {
             setLoading(false);
           }
         } else {
-          const res = await checkAction({ code: match[0], model });
+          const res = await getDataAction({ code: match[0], model });
           await supabase.from("queueTable").insert({
             action_name: res?.data[0]?.action_name,
             text: "ready",
@@ -132,14 +124,18 @@ const Page = () => {
     label: item.model_name,
   }));
   const sortedDataQueue = [...dataQueue].sort((a, b) => a.id - b.id);
+
   return (
-    <div className="flex flex-col items-center justify-center h-[100dvh] bg-zinc-50 p-5">
-      <div className="container mx-auto ">
+    <div className="bg-zinc-50 h-[100dvh] p-5">
+      <div className="container mx-auto">
         {/* select section  */}
-        <div className="grid grid-cols-12  gap-4">
-          <div className="col-span-6">
-            <h1 className="py-2">Pilih Model untuk tambah action</h1>
-            <Item name="model" className="w-full  px-2">
+        <div className="grid grid-cols-12 gap-2">
+          <div className="md:col-span-4 col-span-12 lg:col-span-4">
+            <h1 className="py-2">
+              Pilih Model untuk tambah action
+              <i className="text-sm text-red-500">*</i>
+            </h1>
+            <Item name="model" className="w-full px-2">
               {data && (
                 <Select
                   size="large"
@@ -150,8 +146,10 @@ const Page = () => {
               )}
             </Item>
           </div>
-          <div className="col-span-6">
-            <h1 className="py-2">Pilih Model Streaming</h1>
+          <div className="col-span-12 lg:col-span-3 md:col-span-3">
+            <h1 className="py-2">
+              Pilih Model Streaming <i className="text-sm text-red-500">*</i>
+            </h1>
             <Item name="model" className="w-full  px-2">
               {data && (
                 <Select
@@ -163,10 +161,39 @@ const Page = () => {
               )}
             </Item>
           </div>
+          <div className="col-span-12 lg:col-span-5 md:col-span-5">
+            <h1 className="py-2">
+              Pilih Waktu Scrape <i className="text-xs">(Optional)</i>
+            </h1>
+            <div className="flex">
+              <Item name="model" className="w-full px-2">
+                <Input
+                  size="large"
+                  placeholder="masukkan waktu 'ex 10' default 20s"
+                  value={time}
+                  type="number"
+                  onChange={(e) => handleChangeTime({ time: e.target.value })}
+                />
+              </Item>
+              <Button size="large" type="primary" onClick={handleSave}>
+                save
+              </Button>
+            </div>
+          </div>
         </div>
 
+        {/* status section  */}
+        {status && status.msg && (
+          <div className="grid py-2 grid-cols-1">
+            <Button type="primary" className="cursor-not-allowed" size="large">
+              {status?.msg}
+              <LoadingOutlined />
+            </Button>
+          </div>
+        )}
+
         {/* form section  */}
-        <div className="grid grid-cols-1   md:grid-cols-12 lg:grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-12 lg:grid-cols-12 gap-2">
           <div className="md:col-span-3">
             <form onSubmit={(e) => e.preventDefault()}>
               <div className="mb-4">
@@ -174,7 +201,7 @@ const Page = () => {
                   disabled={loading}
                   onChange={(e) => setqueueName(e?.target?.value)}
                   value={queueName}
-                  className="w-full h-80 p-2 border rounded"
+                  className="w-full md:h-80 lg:h-80 h-full p-2 border rounded"
                   placeholder="Masukkan kode atau kode + pesan ... seperti 'a Halo' atau 'a' "
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -195,7 +222,7 @@ const Page = () => {
             </form>
           </div>
           <div className="md:col-span-4">
-            <div className="overflow-x-auto overflow-y-auto h-96">
+            <div className="overflow-x-auto overflow-y-auto md:h-96 lg:h-96 h-full">
               <table className="w-full text-sm text-left rtl:text-right border text-gray-500">
                 <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                   <tr>
@@ -250,7 +277,7 @@ const Page = () => {
 
           <div className="md:col-span-5">
             {/* queue table  */}
-            <div className="overflow-y-auto h-full max-h-[50vh]">
+            <div className="overflow-y-auto lg:max-h-[50vh] h-full md:max-h-[50vh] ">
               <table className="text-sm text-left border text-gray-500 w-full">
                 <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                   <tr>
@@ -279,6 +306,9 @@ const Page = () => {
             </div>
           </div>
         </div>
+
+        {/* /test section  */}
+        <div className="grid grid-cols-1 md:grid-cols-12 lg:grid-cols-12 gap-2"></div>
       </div>
     </div>
   );
