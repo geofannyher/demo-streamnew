@@ -164,7 +164,7 @@ const Page = () => {
           </div>
           <div className="col-span-12 items-center lg:col-span-5 md:col-span-5">
             <h1 className="py-2">
-              Pilih Waktu Scrape <i className="text-xs">(Optional)</i>
+              Custom Waktu Scrape <i className="text-xs">(Optional)</i>
             </h1>
             <div className="flex w-full">
               <Item name="model" className="w-full px-2">
