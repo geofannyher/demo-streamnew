@@ -2,26 +2,29 @@
 
 import React, { useEffect, useState } from "react";
 import { useQueueData } from "../hook/useQueueData";
-import { Button, Form, Input, message, Select } from "antd";
+import { Button, Form, Input, message, Select, Switch } from "antd";
 import { useListModel } from "../hook/useListModel";
 import { supabase } from "@/lib/supabase";
 import { getDataAction } from "../services/action/action.service";
 import { useFetchDataComment } from "../hook/useFetchComment";
 import { useChangeTime } from "../hook/useChangeTime";
 import { LoadingOutlined } from "@ant-design/icons";
+import { deleteQueue, submitQueue } from "../services/queue/queue.service";
+import { LuTrash2 } from "react-icons/lu";
+import { IQueue } from "@/shared/Type/TestType";
 
 const Page = () => {
   const { data } = useListModel();
   const [queueName, setqueueName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [model, setModel] = useState<string>("");
-  const [queueTable, setQueueTable] = useState([]);
+  const [queueTable, setQueueTable] = useState<IQueue[]>([]);
   const { dataQueue, loading: dataLoading } = useQueueData({
     model_name: model,
   });
   const { handleChangeTime, time, handleSave } = useChangeTime();
-  const { status } = useFetchDataComment();
-
+  const { status, dataAction, setIsScraping, isScraping } =
+    useFetchDataComment();
   const handleSendQueue = async () => {
     if (!model) {
       return message.error("Pilih model terlebih dahulu");
@@ -41,7 +44,7 @@ const Page = () => {
         if (checkMessage > 2) {
           try {
             const newMessage = queueName.replace(regex, "").trim();
-            await supabase.from("queueTable").insert({
+            await submitQueue({
               action_name: res?.data[0]?.action_name,
               text: newMessage,
               queue_num: res?.data[0]?.code,
@@ -81,7 +84,6 @@ const Page = () => {
   };
 
   const { Item } = Form;
-
   const handleChange = (value: string) => {
     setModel(value);
   };
@@ -124,7 +126,6 @@ const Page = () => {
     label: item.model_name,
   }));
   const sortedDataQueue = [...dataQueue].sort((a, b) => a.id - b.id);
-
   return (
     <div className="bg-zinc-50 h-[100dvh] p-5">
       <div className="container mx-auto">
@@ -161,11 +162,11 @@ const Page = () => {
               )}
             </Item>
           </div>
-          <div className="col-span-12 lg:col-span-5 md:col-span-5">
+          <div className="col-span-12 items-center lg:col-span-5 md:col-span-5">
             <h1 className="py-2">
               Pilih Waktu Scrape <i className="text-xs">(Optional)</i>
             </h1>
-            <div className="flex">
+            <div className="flex w-full">
               <Item name="model" className="w-full px-2">
                 <Input
                   size="large"
@@ -178,6 +179,12 @@ const Page = () => {
               <Button size="large" type="primary" onClick={handleSave}>
                 save
               </Button>
+              <div className="pl-5 w-full">
+                <h1 className="font-semibold text-sm">
+                  Time Scrape {time} /second
+                </h1>
+                <Switch onChange={() => setIsScraping(!isScraping)} />
+              </div>
             </div>
           </div>
         </div>
@@ -275,40 +282,57 @@ const Page = () => {
             </div>
           </div>
 
-          <div className="md:col-span-5">
+          <div className="md:col-span-5 relative">
             {/* queue table  */}
-            <div className="overflow-y-auto lg:max-h-[50vh] h-full md:max-h-[50vh] ">
-              <table className="text-sm text-left border text-gray-500 w-full">
-                <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
-                  <tr>
-                    <th scope="col" className="px-6 py-3">
-                      Queue
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      Action Name
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {queueTable.map((item: any, index) => (
-                    <tr className="bg-white" key={index}>
-                      <th
-                        scope="row"
-                        className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
-                      >
-                        {item?.action_name}
+            <div className="overflow-y-auto  lg:max-h-[50vh] h-full md:max-h-[50vh]">
+              <div className="relative">
+                <table className="text-sm text-left border text-gray-500 w-full">
+                  <thead className="text-xs sticky top-0 text-gray-700 uppercase bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3">
+                        Queue
                       </th>
-                      <td className="px-6 py-4">{item?.text}</td>
+                      <th scope="col" className="px-6 py-3">
+                        Action Name
+                      </th>
+                      <th scope="col" className="px-6 py-3">
+                        Option
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {queueTable.map((item, index) => (
+                      <tr className="bg-white" key={index}>
+                        <th
+                          scope="row"
+                          className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
+                        >
+                          {item?.action_name}
+                        </th>
+                        <td className="px-6 py-4">{item?.text}</td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => deleteQueue({ id: item?.id })}
+                            className=" duration-300 hover:bg-purple-800 shadow-lg rounded-md right-0 bg-purple-500 text-white px-4 py-2 "
+                          >
+                            <LuTrash2 />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
 
         {/* /test section  */}
-        <div className="grid grid-cols-1 md:grid-cols-12 lg:grid-cols-12 gap-2"></div>
+        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-2">
+          {dataAction.map((data, index) => (
+            <h1 key={index}>{JSON.stringify(data)}</h1>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -10,5 +10,6 @@ export const useChangeTime = () => {
   const handleSave = () => {
     localStorage.setItem("timeScrape", String(time));
   };
+
   return { handleChangeTime, time, handleSave };
 };

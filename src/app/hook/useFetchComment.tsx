@@ -2,16 +2,19 @@
 import { useEffect, useRef, useState } from "react";
 import { ApifyClient } from "apify-client";
 import { TDataChat, Tgift, TNewJoin, TRoomView } from "@/shared/Type/TestType";
-import { submitToApi } from "../services/action/action.service";
+import { getDataAction, submitToApi } from "../services/action/action.service";
+import { submitQueue } from "../services/queue/queue.service";
 
 export const useFetchDataComment = () => {
-  const [dataAction, setdataAction] = useState("");
+  const [isScraping, setIsScraping] = useState(false);
+  const intervalId = useRef<NodeJS.Timeout | null>(null);
+  const [dataAction, setdataAction] = useState<any[]>([]);
   const [status, setstatus] = useState({
     load: false,
     msg: "",
   });
   const input = {
-    usernames: ["MAJU GAMING"],
+    usernames: ["s"],
     event_chat: true, //comment live
     event_gift: true, //gift live
     event_member: true, //member join live
@@ -34,7 +37,7 @@ export const useFetchDataComment = () => {
     },
   };
   const hasFetched = useRef(false);
-  const api = "apify_api_zEDY3xQFyKeJcT8vG5lhg8TQHUjvA64t7O5H";
+  const api = "apify_api_cLsPut7c36TFfre9EoZ9PzJm1V5CHa2MuffP";
   const client = new ApifyClient({ token: api });
 
   const getDataComment = async () => {
@@ -54,55 +57,17 @@ export const useFetchDataComment = () => {
       const relevantItems = items.slice(1);
       setstatus({ ...status, msg: "Sedang Proses data..." });
 
-      if (relevantItems.length > 2) {
-        const chatData: TDataChat[] = [];
-        const newJoinData: TNewJoin[] = [];
-        const giftData: Tgift[] = [];
-        let roomUserData: TRoomView = {};
-
-        relevantItems.forEach((item: any) => {
-          if (item.eventType === "chat" && chatData.length < 10) {
-            if (item.nickname && item.comment) {
-              chatData.push({
-                username: item.nickname,
-                comment: item.comment,
-              });
-            }
-          } else if (item.eventType === "gift" && giftData.length < 10) {
-            if (item.nickname && item.giftName) {
-              giftData.push({
-                username: item.nickname,
-                giftName: item.giftName,
-              });
-            }
-          } else if (item.eventType === "member" && newJoinData.length < 10) {
-            if (item.nickname) {
-              newJoinData.push({
-                username: item.nickname,
-              });
-            }
-          } else if (item.eventType === "roomUser") {
-            roomUserData = {
-              viewer: item.viewerCount || roomUserData.viewer,
-            };
-          }
-        });
-
-        const formattedData = {
-          chat: chatData,
-          gift: giftData,
-          newMember: newJoinData,
-          roomUser: roomUserData,
-        };
+      if (relevantItems.length > 2 && relevantItems[2].eventType !== "status") {
+        const formattedData = processRelevantItems(relevantItems);
         setstatus({ ...status, msg: "AI generate data..." });
-        const res = await submitToApi(JSON.stringify(formattedData));
 
-        if (res === "error") {
-          setstatus({ load: false, msg: "ada problem di api" });
-        }
-        setdataAction(res);
-        // const formatRes = JSON.parse(res);
-        // console.log(formatRes);
+        const res = await submitToApi(JSON.stringify(formattedData));
+        await handleApiResponse(res, status, setstatus);
+      } else {
+        const emptyData = { chat: [], gift: [], newMember: [], roomUser: {} };
+        const res = await submitToApi(JSON.stringify(emptyData));
+        setdataAction((prevDataAction) => [...prevDataAction, res]);
+        // await handleApiResponse(res, status, setstatus);
       }
     } catch (error) {
       console.error(error, "error");
@@ -110,13 +75,91 @@ export const useFetchDataComment = () => {
       hasFetched.current = false;
     }
   };
+  const handleApiResponse = async (
+    res: string,
+    status: any,
+    setstatus: any
+  ) => {
+    if (res === "error") {
+      setstatus({ load: false, msg: "Ada problem di API" });
+      return;
+    }
+
+    const cleanResult = res.replace(/^```json\n/, "").replace(/\n```$/, "");
+    const arrayData = JSON.parse(cleanResult);
+
+    for (const item of arrayData) {
+      const res = await getDataAction({ code: item?.code, model: "kokovin" });
+      try {
+        setstatus({ ...status, msg: "Send to Queue..." });
+        await submitQueue({
+          action_name: res?.data[0]?.action_name,
+          text: item?.content,
+          queue_num: res?.data[0]?.code,
+          time_start: res?.data[0]?.time_start,
+          time_end: res?.data[0]?.time_end,
+          id_audio: res?.data[0]?.id_audio,
+        });
+      } catch (error) {
+        console.error(`Failed to submit item with code ${item.code}:`, error);
+      } finally {
+        setstatus({ status: false, msg: "Done" });
+      }
+    }
+  };
+
+  const processRelevantItems = (items: any[]) => {
+    const chatData: TDataChat[] = [];
+    const newJoinData: TNewJoin[] = [];
+    const giftData: Tgift[] = [];
+    let roomUserData: TRoomView = {};
+
+    items.forEach((item) => {
+      switch (item.eventType) {
+        case "chat":
+          if (chatData.length < 10 && item.nickname && item.comment) {
+            chatData.push({ username: item.nickname, comment: item.comment });
+          }
+          break;
+        case "gift":
+          if (giftData.length < 10 && item.nickname && item.giftName) {
+            giftData.push({ username: item.nickname, giftName: item.giftName });
+          }
+          break;
+        case "member":
+          if (newJoinData.length < 10 && item.nickname) {
+            newJoinData.push({ username: item.nickname });
+          }
+          break;
+        case "roomUser":
+          roomUserData = {
+            viewer: item.viewerCount || roomUserData.viewer,
+          };
+          break;
+      }
+    });
+
+    return {
+      chat: chatData,
+      gift: giftData,
+      newMember: newJoinData,
+      roomUser: roomUserData,
+    };
+  };
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      getDataComment();
-    }, 15000);
+    if (isScraping) {
+      intervalId.current = setInterval(() => {
+        getDataComment();
+      }, 25000);
+    } else if (intervalId.current) {
+      clearInterval(intervalId.current);
+      intervalId.current = null;
+    }
 
-    return () => clearInterval(intervalId);
-  }, []);
+    return () => {
+      if (intervalId.current) clearInterval(intervalId.current);
+    };
+  }, [isScraping]);
 
-  return { dataAction, status };
+  return { dataAction, status, setIsScraping, isScraping };
 };

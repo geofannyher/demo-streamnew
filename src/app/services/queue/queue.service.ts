@@ -8,6 +8,14 @@ export interface Action {
   code: string;
   codee: string;
 }
+export interface ISubmitQueue {
+  action_name: string;
+  text: string;
+  queue_num: string;
+  time_end: string;
+  time_start: string;
+  id_audio: string;
+}
 export const getQueueData = async ({
   model_name,
 }: {
@@ -22,4 +30,38 @@ export const getQueueData = async ({
   } else {
     return { data, error: null } as PostgrestResponse<Action>;
   }
+};
+
+export const submitQueue = async ({
+  action_name,
+  text,
+  queue_num,
+  time_end,
+  time_start,
+  id_audio,
+}: ISubmitQueue) => {
+  const { data, error } = await supabase.from("queueTable").insert({
+    action_name,
+    text,
+    queue_num,
+    time_start,
+    time_end,
+    id_audio,
+  });
+  if (error) {
+    return error;
+  } else {
+    return data;
+  }
+};
+
+export const deleteQueue = async ({ id }: { id: number }) => {
+  const { data, error } = await supabase
+    .from("queueTable")
+    .delete()
+    .eq("id", id);
+  if (error) {
+    return { data: null, error };
+  }
+  return { data, error: null };
 };

@@ -13,3 +13,12 @@ export type Tgift = {
 export type TRoomView = {
   viewer?: number | null | unknown;
 };
+export type IQueue = {
+  action_name: string;
+  id: number;
+  id_audio: string;
+  queue_num: string;
+  text: string;
+  time_end: string;
+  time_start: string;
+};

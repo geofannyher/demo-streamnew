@@ -28,11 +28,11 @@ export const submitToApi = async (formattedData: any) => {
   try {
     const res = await axios.post("https://chatx-api.hadiwijaya.co/chat", {
       chat_limit: 1,
-      id: "devyo",
+      id: "duwi",
       is_rag: "false",
       message: JSON.stringify(formattedData),
       model: "gpt-4o",
-      star: "stream_director",
+      star: "stream_director2",
       temperature: 0,
     });
 
