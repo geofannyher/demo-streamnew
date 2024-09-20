@@ -14,7 +14,7 @@ export const useFetchDataComment = () => {
     msg: "",
   });
   const input = {
-    usernames: ["s"],
+    usernames: ["oen.official"],
     event_chat: true, //comment live
     event_gift: true, //gift live
     event_member: true, //member join live
