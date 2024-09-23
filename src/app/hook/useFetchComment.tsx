@@ -5,7 +5,7 @@ import { TDataChat, Tgift, TNewJoin, TRoomView } from "@/shared/Type/TestType";
 import { getDataAction, submitToApi } from "../services/action/action.service";
 import { submitQueue } from "../services/queue/queue.service";
 
-export const useFetchDataComment = () => {
+export const useFetchDataComment = (user: string) => {
   const [isScraping, setIsScraping] = useState(false);
   const intervalId = useRef<NodeJS.Timeout | null>(null);
   const [dataAction, setdataAction] = useState<any[]>([]);
@@ -13,8 +13,9 @@ export const useFetchDataComment = () => {
     load: false,
     msg: "",
   });
+
   const input = {
-    usernames: ["oen.official"],
+    usernames: [user],
     event_chat: true, //comment live
     event_gift: true, //gift live
     event_member: true, //member join live
@@ -37,14 +38,14 @@ export const useFetchDataComment = () => {
     },
   };
   const hasFetched = useRef(false);
-  const api = "apify_api_cLsPut7c36TFfre9EoZ9PzJm1V5CHa2MuffP";
+  const api = "apify_api_D1r0fSK2rzkhKitimCUPb0weIsVKMH1B9ThQ";
   const client = new ApifyClient({ token: api });
+  console.log(user);
 
   const getDataComment = async () => {
     const time = localStorage.getItem("timeScrape");
     if (hasFetched.current) return;
     hasFetched.current = true;
-
     try {
       setstatus({ msg: "Sedang Scrape data...", load: true });
       const run = await client.actor("iBGygcuAxeHUkYsq9").call(input, {
@@ -65,7 +66,7 @@ export const useFetchDataComment = () => {
         // await handleApiResponse(res, status, setstatus);
         setdataAction((prevDataAction) => [
           ...prevDataAction,
-          res + "ini data kalo ada comment",
+          res + "Data Comment Ada",
         ]);
       } else {
         const emptyData = { chat: [], gift: [], newMember: [], roomUser: {} };

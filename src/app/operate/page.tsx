@@ -12,10 +12,13 @@ import { LoadingOutlined } from "@ant-design/icons";
 import { deleteQueue, submitQueue } from "../services/queue/queue.service";
 import { LuTrash2 } from "react-icons/lu";
 import { IQueue } from "@/shared/Type/TestType";
+import { getReset } from "../services/reset/reset.service";
 
 const Page = () => {
   const { data } = useListModel();
   const [queueName, setqueueName] = useState<string>("");
+  const [username, setUsername] = useState<string>("");
+  const [submituser, setSubmituser] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [model, setModel] = useState<string>("");
   const [queueTable, setQueueTable] = useState<IQueue[]>([]);
@@ -24,7 +27,8 @@ const Page = () => {
   });
   const { handleChangeTime, time, handleSave } = useChangeTime();
   const { status, dataAction, setIsScraping, isScraping } =
-    useFetchDataComment();
+    useFetchDataComment(submituser);
+
   const handleSendQueue = async () => {
     if (!model) {
       return message.error("Pilih model terlebih dahulu");
@@ -83,6 +87,10 @@ const Page = () => {
     }
   };
 
+  const handleSubmitUser = () => {
+    setSubmituser(username);
+  };
+
   const { Item } = Form;
   const handleChange = (value: string) => {
     setModel(value);
@@ -131,7 +139,7 @@ const Page = () => {
       <div className="container mx-auto">
         {/* select section  */}
         <div className="grid grid-cols-12 gap-2">
-          <div className="md:col-span-4 col-span-12 lg:col-span-4">
+          <div className="md:col-span-2 col-span-12 lg:col-span-2">
             <h1 className="py-2">
               Pilih Model untuk tambah action
               <i className="text-sm text-red-500">*</i>
@@ -147,7 +155,7 @@ const Page = () => {
               )}
             </Item>
           </div>
-          <div className="col-span-12 lg:col-span-3 md:col-span-3">
+          <div className="col-span-12 lg:col-span-2 md:col-span-2">
             <h1 className="py-2">
               Pilih Model Streaming <i className="text-sm text-red-500">*</i>
             </h1>
@@ -185,6 +193,30 @@ const Page = () => {
                 </h1>
                 <Switch onChange={() => setIsScraping(!isScraping)} />
               </div>
+            </div>
+          </div>
+          <div className="col-span-12  lg:col-span-2 md:col-span-2">
+            <h1 className="py-2">
+              Masukkan id tiktok <i className="text-sm text-red-500">*</i>
+            </h1>
+            <div className="flex py-2">
+              <Item name="model" className="w-full px-2">
+                <Input
+                  size="large"
+                  disabled={submituser.length > 1}
+                  placeholder="masukkan id tiktok"
+                  type="text"
+                  onChange={(e) => setUsername(e?.target?.value)}
+                />
+              </Item>
+              <Button
+                size="large"
+                onClick={handleSubmitUser}
+                disabled={!username || submituser.length > 1}
+                type="primary"
+              >
+                save
+              </Button>
             </div>
           </div>
         </div>
@@ -327,6 +359,27 @@ const Page = () => {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 mt-10 md:grid-cols-1 lg:grid-cols-1 gap-2">
+          <h1>Testing area</h1>
+          <div className="max-w-sm">
+            <button
+              className="px-4 text-white  rounded-lg shadow-lg py-2 bg-violet-500 hover:bg-violet-900 duration-300  transition"
+              onClick={() => {
+                getReset({ id: "duwi", star: "stream_director2" }).then(
+                  (res: any) => {
+                    if (res?.status === 200) {
+                      return message.success("success reset star");
+                    } else {
+                      return message.error("error reset star");
+                    }
+                  }
+                );
+              }}
+            >
+              Reset star stream_director2
+            </button>
+          </div>
+        </div>
         {/* /test section  */}
         <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-2">
           {dataAction.map((data, index) => (
