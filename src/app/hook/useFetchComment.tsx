@@ -62,18 +62,21 @@ export const useFetchDataComment = (user: string) => {
         const formattedData = processRelevantItems(relevantItems);
         setstatus({ ...status, msg: "AI generate data..." });
 
-        const res = await submitToApi(JSON.stringify(formattedData));
+        // const res = await submitToApi(JSON.stringify(formattedData));
         // await handleApiResponse(res, status, setstatus);
+        const result = JSON.stringify(formattedData);
         setdataAction((prevDataAction) => [
           ...prevDataAction,
-          res + "Data Comment Ada",
+          result + "Data Comment Ada",
         ]);
       } else {
         const emptyData = { chat: [], gift: [], newMember: [], roomUser: {} };
-        const res = await submitToApi(JSON.stringify(emptyData));
+        // const res = await submitToApi(JSON.stringify(emptyData));
+        const result = JSON.stringify(emptyData);
+
         setdataAction((prevDataAction) => [
           ...prevDataAction,
-          res + "ini data kalo gaada comment",
+          result + "ini data kalo gaada comment",
         ]);
         // await handleApiResponse(res, status, setstatus);
       }

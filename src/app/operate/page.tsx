@@ -383,7 +383,10 @@ const Page = () => {
         {/* /test section  */}
         <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-2">
           {dataAction.map((data, index) => (
-            <h1 key={index}>{JSON.stringify(data)}</h1>
+            <>
+              <h1 key={index}>{JSON.stringify(data)}</h1>
+              <br />
+            </>
           ))}
         </div>
       </div>
