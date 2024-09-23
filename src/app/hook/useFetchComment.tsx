@@ -28,7 +28,7 @@ export const useFetchDataComment = (user: string) => {
     event_envelope: false,
     event_questionNew: false,
     event_liveIntro: false,
-    event_status: true,
+    event_status: false,
     event_linkMicBattle: false,
     event_linkMicArmies: false,
     end_allStreamsEnds: true,
