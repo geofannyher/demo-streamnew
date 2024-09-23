@@ -57,7 +57,7 @@ export const useFetchDataComment = (user: string) => {
       const { items } = await client.dataset(run.defaultDatasetId).listItems();
       const relevantItems = items.slice(1);
       setstatus({ ...status, msg: "Sedang Proses data..." });
-
+      console.log(items);
       if (relevantItems.length > 2 && relevantItems[2].eventType !== "status") {
         const formattedData = processRelevantItems(relevantItems);
         setstatus({ ...status, msg: "AI generate data..." });
