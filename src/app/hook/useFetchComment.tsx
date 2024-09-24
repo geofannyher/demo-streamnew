@@ -96,7 +96,7 @@ export const useFetchDataComment = (user: string) => {
           <>
             {JSON.stringify(dataWithLastAction)}
             <br />
-            {"----------------response baru----------------"}
+            <>"----------------response baru----------------"</>
             <br />
             {res}
             <br />
@@ -108,8 +108,9 @@ export const useFetchDataComment = (user: string) => {
           gift: [],
           newMember: [],
           roomUser: {},
-          lastAction: lastActionRef.current || [],
+          lastAction: [],
         };
+
         const res = await submitToApi(emptyData);
         setdataAction((prevDataAction) => [
           ...prevDataAction,
