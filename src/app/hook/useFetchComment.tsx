@@ -9,11 +9,11 @@ export const useFetchDataComment = (user: string) => {
   const [isScraping, setIsScraping] = useState(false);
   const intervalId = useRef<NodeJS.Timeout | null>(null);
   const [dataAction, setdataAction] = useState<any[]>([]);
+  const [lastAction, setLastAction] = useState<any[]>([]);
   const [status, setstatus] = useState({
     load: false,
     msg: "",
   });
-
   const input = {
     usernames: [user],
     event_chat: true, //comment live
@@ -40,7 +40,8 @@ export const useFetchDataComment = (user: string) => {
   const hasFetched = useRef(false);
   const api = "apify_api_D1r0fSK2rzkhKitimCUPb0weIsVKMH1B9ThQ";
   const client = new ApifyClient({ token: api });
-  console.log(user);
+
+  const lastActionRef = useRef<any[]>([]);
 
   const getDataComment = async () => {
     const time = localStorage.getItem("timeScrape");
@@ -57,28 +58,69 @@ export const useFetchDataComment = (user: string) => {
       const { items } = await client.dataset(run.defaultDatasetId).listItems();
       const relevantItems = items.slice(1);
       setstatus({ ...status, msg: "Sedang Proses data..." });
-      console.log(items);
-      if (relevantItems.length > 2 && relevantItems[2].eventType !== "status") {
-        const formattedData = processRelevantItems(relevantItems);
-        setstatus({ ...status, msg: "AI generate data..." });
 
-        // const res = await submitToApi(JSON.stringify(formattedData));
-        // await handleApiResponse(res, status, setstatus);
-        const result = JSON.stringify(formattedData);
+      if (relevantItems.length > 2 && relevantItems[2].eventType !== "status") {
+        const formattedData = processRelevantItems({ items: relevantItems });
+
+        // Jika lastActionRef.current mencapai 10 item, kosongkan
+        if (
+          Array.isArray(lastActionRef.current) &&
+          lastActionRef.current.length >= 9
+        ) {
+          lastActionRef.current = []; // Kosongkan lastAction setelah mencapai 10 item
+          console.log("lastActionRef has been reset to an empty array.");
+        }
+
+        // Tambahkan lastAction dari lastActionRef
+        const dataWithLastAction = {
+          ...formattedData,
+          lastAction: lastActionRef.current || [], // Pastikan array
+        };
+
+        // Submit data ke API
+        const res = await submitToApi(dataWithLastAction);
+
+        // Parse respons API
+        const responseJson = JSON.parse(res);
+
+        // Gabungkan lastAction baru dengan yang lama, periksa panjang totalnya
+        lastActionRef.current = [
+          ...(Array.isArray(lastActionRef.current)
+            ? lastActionRef.current
+            : []),
+          ...responseJson,
+        ];
+
         setdataAction((prevDataAction) => [
           ...prevDataAction,
-          result + "Data Comment Ada",
+          <>
+            {JSON.stringify(dataWithLastAction)}
+            <br />
+            "----------------response baru----------------"
+            <br />
+            {res}
+            <br />
+          </>,
         ]);
       } else {
-        const emptyData = { chat: [], gift: [], newMember: [], roomUser: {} };
-        // const res = await submitToApi(JSON.stringify(emptyData));
-        const result = JSON.stringify(emptyData);
-
+        const emptyData = {
+          chat: [],
+          gift: [],
+          newMember: [],
+          roomUser: {},
+          lastAction: lastActionRef.current || [],
+        };
+        const res = await submitToApi(emptyData);
         setdataAction((prevDataAction) => [
           ...prevDataAction,
-          result + "ini data kalo gaada comment",
+          <>
+            {JSON.stringify(emptyData)}
+            <br />
+            {res}
+            <br />
+            ini data kalo gaada comment
+          </>,
         ]);
-        // await handleApiResponse(res, status, setstatus);
       }
     } catch (error) {
       console.error(error, "error");
@@ -86,6 +128,8 @@ export const useFetchDataComment = (user: string) => {
       hasFetched.current = false;
     }
   };
+
+  // submit to queueu
   const handleApiResponse = async (
     res: string,
     status: any,
@@ -119,13 +163,16 @@ export const useFetchDataComment = (user: string) => {
     }
   };
 
-  const processRelevantItems = (items: any[]) => {
+  // process data to standart format request
+  const processRelevantItems = ({ items }: { items: any[] }) => {
     const chatData: TDataChat[] = [];
     const newJoinData: TNewJoin[] = [];
     const giftData: Tgift[] = [];
+
     let roomUserData: TRoomView = {};
 
-    items.forEach((item) => {
+    // Proses item berdasarkan eventType
+    items.forEach((item: any) => {
       switch (item.eventType) {
         case "chat":
           if (chatData.length < 10 && item.nickname && item.comment) {
@@ -150,19 +197,23 @@ export const useFetchDataComment = (user: string) => {
       }
     });
 
-    return {
+    const formattedData = {
       chat: chatData,
       gift: giftData,
       newMember: newJoinData,
       roomUser: roomUserData,
     };
+
+    return formattedData;
   };
+
   useEffect(() => {
     if (isScraping) {
       intervalId.current = setInterval(() => {
         getDataComment();
       }, 25000);
     } else if (intervalId.current) {
+      setstatus({ load: false, msg: "" });
       clearInterval(intervalId.current);
       intervalId.current = null;
     }

@@ -140,7 +140,7 @@ const Page = () => {
         {/* select section  */}
         <div className="grid grid-cols-12 gap-2">
           <div className="md:col-span-2 col-span-12 lg:col-span-2">
-            <h1 className="py-2">
+            <h1 className="py-2 text-sm md:text-base lg:text-base">
               Pilih Model untuk tambah action
               <i className="text-sm text-red-500">*</i>
             </h1>
@@ -156,7 +156,7 @@ const Page = () => {
             </Item>
           </div>
           <div className="col-span-12 lg:col-span-2 md:col-span-2">
-            <h1 className="py-2">
+            <h1 className="py-2 text-sm md:text-base lg:text-base">
               Pilih Model Streaming <i className="text-sm text-red-500">*</i>
             </h1>
             <Item name="model" className="w-full  px-2">
@@ -171,7 +171,7 @@ const Page = () => {
             </Item>
           </div>
           <div className="col-span-12 items-center lg:col-span-5 md:col-span-5">
-            <h1 className="py-2">
+            <h1 className="py-2 text-sm md:text-base lg:text-base">
               Custom Waktu Scrape <i className="text-xs">(Optional)</i>
             </h1>
             <div className="flex w-full">
@@ -191,12 +191,15 @@ const Page = () => {
                 <h1 className="font-semibold text-sm">
                   Time Scrape {time} /second
                 </h1>
-                <Switch onChange={() => setIsScraping(!isScraping)} />
+                <Switch
+                  disabled={!username}
+                  onChange={() => setIsScraping(!isScraping)}
+                />
               </div>
             </div>
           </div>
           <div className="col-span-12  lg:col-span-2 md:col-span-2">
-            <h1 className="py-2">
+            <h1 className="py-2 text-sm md:text-base lg:text-base">
               Masukkan id tiktok <i className="text-sm text-red-500">*</i>
             </h1>
             <div className="flex py-2">
@@ -383,10 +386,10 @@ const Page = () => {
         {/* /test section  */}
         <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-2">
           {dataAction.map((data, index) => (
-            <>
-              <h1 key={index}>{JSON.stringify(data)}</h1>
+            <div key={index}>
+              <h1>{data}</h1>
               <br />
-            </>
+            </div>
           ))}
         </div>
       </div>
