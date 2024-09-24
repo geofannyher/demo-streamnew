@@ -96,7 +96,7 @@ export const useFetchDataComment = (user: string) => {
           <>
             {JSON.stringify(dataWithLastAction)}
             <br />
-            "----------------response baru----------------"
+            {"----------------response baru----------------"}
             <br />
             {res}
             <br />
