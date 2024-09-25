@@ -12,7 +12,6 @@ import { LoadingOutlined } from "@ant-design/icons";
 import { deleteQueue, submitQueue } from "../services/queue/queue.service";
 import { LuTrash2 } from "react-icons/lu";
 import { IQueue } from "@/shared/Type/TestType";
-import { getReset } from "../services/reset/reset.service";
 
 const Page = () => {
   const { data } = useListModel();
@@ -26,8 +25,7 @@ const Page = () => {
     model_name: model,
   });
   const { handleChangeTime, time, handleSave } = useChangeTime();
-  const { status, dataAction, setIsScraping, isScraping } =
-    useFetchDataComment(submituser);
+  const { status, setIsScraping, isScraping } = useFetchDataComment(submituser);
 
   const handleSendQueue = async () => {
     if (!model) {
@@ -87,13 +85,13 @@ const Page = () => {
     }
   };
 
-  const handleSubmitUser = () => {
-    setSubmituser(username);
-  };
-
   const { Item } = Form;
   const handleChange = (value: string) => {
     setModel(value);
+  };
+
+  const handleSubmitUser = () => {
+    setSubmituser(username);
   };
 
   const fetchData = async () => {
@@ -336,61 +334,31 @@ const Page = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {queueTable.map((item, index) => (
-                      <tr className="bg-white" key={index}>
-                        <th
-                          scope="row"
-                          className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
-                        >
-                          {item?.action_name}
-                        </th>
-                        <td className="px-6 py-4">{item?.text}</td>
-                        <td className="px-6 py-4">
-                          <button
-                            onClick={() => deleteQueue({ id: item?.id })}
-                            className=" duration-300 hover:bg-purple-800 shadow-lg rounded-md right-0 bg-purple-500 text-white px-4 py-2 "
+                    {queueTable &&
+                      queueTable.map((item, index) => (
+                        <tr className="bg-white" key={index}>
+                          <th
+                            scope="row"
+                            className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
                           >
-                            <LuTrash2 />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                            {item?.action_name}
+                          </th>
+                          <td className="px-6 py-4">{item?.text}</td>
+                          <td className="px-6 py-4">
+                            <button
+                              onClick={() => deleteQueue({ id: item?.id })}
+                              className=" duration-300 hover:bg-purple-800 shadow-lg rounded-md right-0 bg-purple-500 text-white px-4 py-2 "
+                            >
+                              <LuTrash2 />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 mt-10 md:grid-cols-1 lg:grid-cols-1 gap-2">
-          <h1>Testing area</h1>
-          <div className="max-w-sm">
-            <button
-              className="px-4 text-white  rounded-lg shadow-lg py-2 bg-violet-500 hover:bg-violet-900 duration-300  transition"
-              onClick={() => {
-                getReset({ id: "duwi", star: "stream_director2" }).then(
-                  (res: any) => {
-                    if (res?.status === 200) {
-                      return message.success("success reset star");
-                    } else {
-                      return message.error("error reset star");
-                    }
-                  }
-                );
-              }}
-            >
-              Reset star stream_director2
-            </button>
-          </div>
-        </div>
-        {/* /test section  */}
-        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-2">
-          {dataAction.map((data, index) => (
-            <div key={index}>
-              <h1>{data}</h1>
-              <br />
-            </div>
-          ))}
         </div>
       </div>
     </div>

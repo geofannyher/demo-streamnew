@@ -1,15 +1,15 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { ApifyClient } from "apify-client";
 import { TDataChat, Tgift, TNewJoin, TRoomView } from "@/shared/Type/TestType";
+import { ApifyClient } from "apify-client";
+import { useEffect, useRef, useState } from "react";
 import { getDataAction, submitToApi } from "../services/action/action.service";
 import { submitQueue } from "../services/queue/queue.service";
+import emojiRegex from "emoji-regex";
 
 export const useFetchDataComment = (user: string) => {
   const [isScraping, setIsScraping] = useState(false);
   const intervalId = useRef<NodeJS.Timeout | null>(null);
   const [dataAction, setdataAction] = useState<any[]>([]);
-  const [lastAction, setLastAction] = useState<any[]>([]);
   const [status, setstatus] = useState({
     load: false,
     msg: "",
@@ -79,7 +79,7 @@ export const useFetchDataComment = (user: string) => {
 
         // Submit data ke API
         const res = await submitToApi(dataWithLastAction);
-
+        await handleApiResponse(res, status, setstatus);
         // Parse respons API
         const responseJson = JSON.parse(res);
 
@@ -96,7 +96,7 @@ export const useFetchDataComment = (user: string) => {
           <>
             {JSON.stringify(dataWithLastAction)}
             <br />
-            <>"----------------response baru----------------"</>
+            <>----------------response baru----------------</>
             <br />
             {res}
             <br />
@@ -112,6 +112,10 @@ export const useFetchDataComment = (user: string) => {
         };
 
         const res = await submitToApi(emptyData);
+
+        // submit data ke queue
+        await handleApiResponse(res, status, setstatus);
+
         setdataAction((prevDataAction) => [
           ...prevDataAction,
           <>
@@ -141,16 +145,20 @@ export const useFetchDataComment = (user: string) => {
       return;
     }
 
+    // clear string json
     const cleanResult = res.replace(/^```json\n/, "").replace(/\n```$/, "");
     const arrayData = JSON.parse(cleanResult);
 
     for (const item of arrayData) {
+      // clear teks dari emoji
+      const clearString = removeEmoji(item?.content);
+
       const res = await getDataAction({ code: item?.code, model: "kokovin" });
       try {
         setstatus({ ...status, msg: "Send to Queue..." });
         await submitQueue({
           action_name: res?.data[0]?.action_name,
-          text: item?.content,
+          text: clearString,
           queue_num: res?.data[0]?.code,
           time_start: res?.data[0]?.time_start,
           time_end: res?.data[0]?.time_end,
@@ -208,8 +216,16 @@ export const useFetchDataComment = (user: string) => {
     return formattedData;
   };
 
+  function removeEmoji(str: string) {
+    const regex = emojiRegex();
+    return str.replace(regex, "");
+  }
+
   useEffect(() => {
     if (isScraping) {
+      // Jalankan getDataComment langsung untuk pertama kali
+      getDataComment();
+
       intervalId.current = setInterval(() => {
         getDataComment();
       }, 25000);
