@@ -43,10 +43,12 @@ export const useFetchDataComment = (user: string) => {
 
   const lastActionRef = useRef<any[]>([]);
 
-  const getDataComment = async () => {
+  const getDataComment = async ({ model }: { model: string }) => {
     const time = localStorage.getItem("timeScrape");
-    if (hasFetched.current) return;
+
+    if (!isScraping || hasFetched.current) return;
     hasFetched.current = true;
+
     try {
       setstatus({ msg: "Sedang Scrape data...", load: true });
       const run = await client.actor("iBGygcuAxeHUkYsq9").call(input, {
@@ -55,11 +57,17 @@ export const useFetchDataComment = (user: string) => {
         build: "latest",
       });
 
+      // Cek lagi isScraping sebelum melanjutkan
+      if (!isScraping) return;
+
       const { items } = await client.dataset(run.defaultDatasetId).listItems();
       const relevantItems = items.slice(1);
-      setstatus({ ...status, msg: "Sedang Proses data..." });
+      setstatus({ ...status, msg: "Proses data..." });
 
-      if (relevantItems.length > 2 && relevantItems[2].eventType !== "status") {
+      // Cek lagi isScraping sebelum melanjutkan
+      if (!isScraping) return;
+
+      if (relevantItems.length > 1 && relevantItems[1].eventType !== "status") {
         const formattedData = processRelevantItems({ items: relevantItems });
 
         // Jika lastActionRef.current mencapai 10 item, kosongkan
@@ -74,12 +82,15 @@ export const useFetchDataComment = (user: string) => {
         // Tambahkan lastAction dari lastActionRef
         const dataWithLastAction = {
           ...formattedData,
-          lastAction: lastActionRef.current || [], // Pastikan array
+          lastAction: lastActionRef.current || [],
         };
 
         // Submit data ke API
         const res = await submitToApi(dataWithLastAction);
-        await handleApiResponse(res, status, setstatus);
+
+        // submit data ke queue
+        await handleApiResponse(res, status, setstatus, model);
+
         // Parse respons API
         const responseJson = JSON.parse(res);
 
@@ -114,7 +125,7 @@ export const useFetchDataComment = (user: string) => {
         const res = await submitToApi(emptyData);
 
         // submit data ke queue
-        await handleApiResponse(res, status, setstatus);
+        await handleApiResponse(res, status, setstatus, model);
 
         setdataAction((prevDataAction) => [
           ...prevDataAction,
@@ -138,22 +149,24 @@ export const useFetchDataComment = (user: string) => {
   const handleApiResponse = async (
     res: string,
     status: any,
-    setstatus: any
+    setstatus: any,
+    model: string
   ) => {
-    if (res === "error") {
+    if (!isScraping || res === "error") {
       setstatus({ load: false, msg: "Ada problem di API" });
       return;
     }
-
     // clear string json
-    const cleanResult = res.replace(/^```json\n/, "").replace(/\n```$/, "");
-    const arrayData = JSON.parse(cleanResult);
+    const arrayData = JSON.parse(res);
 
     for (const item of arrayData) {
+      // Hentikan proses jika isScraping false
+      if (!isScraping) return;
+
       // clear teks dari emoji
       const clearString = removeEmoji(item?.content);
 
-      const res = await getDataAction({ code: item?.code, model: "kokovin" });
+      const res = await getDataAction({ code: item?.code, model: model });
       try {
         setstatus({ ...status, msg: "Send to Queue..." });
         await submitQueue({
@@ -167,7 +180,7 @@ export const useFetchDataComment = (user: string) => {
       } catch (error) {
         console.error(`Failed to submit item with code ${item.code}:`, error);
       } finally {
-        setstatus({ status: false, msg: "Done" });
+        setstatus({ load: false, msg: "" });
       }
     }
   };
@@ -222,13 +235,14 @@ export const useFetchDataComment = (user: string) => {
   }
 
   useEffect(() => {
-    if (isScraping) {
+    const modelIdle = localStorage.getItem("modelstream");
+    if (isScraping && modelIdle) {
       // Jalankan getDataComment langsung untuk pertama kali
-      getDataComment();
+      getDataComment({ model: modelIdle });
 
       intervalId.current = setInterval(() => {
-        getDataComment();
-      }, 25000);
+        getDataComment({ model: modelIdle });
+      }, 20000);
     } else if (intervalId.current) {
       setstatus({ load: false, msg: "" });
       clearInterval(intervalId.current);
