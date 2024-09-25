@@ -57,87 +57,65 @@ export const useFetchDataComment = (user: string) => {
         build: "latest",
       });
 
-      // Cek lagi isScraping sebelum melanjutkan
       if (!isScraping) return;
 
       const { items } = await client.dataset(run.defaultDatasetId).listItems();
       const relevantItems = items.slice(1);
       setstatus({ ...status, msg: "Proses data..." });
 
-      // Cek lagi isScraping sebelum melanjutkan
       if (!isScraping) return;
+
+      let dataToSubmit;
 
       if (relevantItems.length > 1 && relevantItems[1].eventType !== "status") {
         const formattedData = processRelevantItems({ items: relevantItems });
 
-        // Jika lastActionRef.current mencapai 10 item, kosongkan
-        if (
-          Array.isArray(lastActionRef.current) &&
-          lastActionRef.current.length >= 9
-        ) {
-          lastActionRef.current = []; // Kosongkan lastAction setelah mencapai 10 item
-          console.log("lastActionRef has been reset to an empty array.");
-        }
-
-        // Tambahkan lastAction dari lastActionRef
-        const dataWithLastAction = {
+        dataToSubmit = {
           ...formattedData,
           lastAction: lastActionRef.current || [],
         };
-
-        // Submit data ke API
-        const res = await submitToApi(dataWithLastAction);
-
-        // submit data ke queue
-        await handleApiResponse(res, status, setstatus, model);
-
-        // Parse respons API
-        const responseJson = JSON.parse(res);
-
-        // Gabungkan lastAction baru dengan yang lama, periksa panjang totalnya
-        lastActionRef.current = [
-          ...(Array.isArray(lastActionRef.current)
-            ? lastActionRef.current
-            : []),
-          ...responseJson,
-        ];
-
-        setdataAction((prevDataAction) => [
-          ...prevDataAction,
-          <>
-            {JSON.stringify(dataWithLastAction)}
-            <br />
-            <>----------------response baru----------------</>
-            <br />
-            {res}
-            <br />
-          </>,
-        ]);
       } else {
-        const emptyData = {
+        dataToSubmit = {
           chat: [],
           gift: [],
           newMember: [],
           roomUser: {},
-          lastAction: [],
+          lastAction: lastActionRef.current || [],
         };
-
-        const res = await submitToApi(emptyData);
-
-        // submit data ke queue
-        await handleApiResponse(res, status, setstatus, model);
-
-        setdataAction((prevDataAction) => [
-          ...prevDataAction,
-          <>
-            {JSON.stringify(emptyData)}
-            <br />
-            {res}
-            <br />
-            ini data kalo gaada comment
-          </>,
-        ]);
       }
+
+      // Jika lastActionRef.current mencapai 10 item, kosongkan
+      if (
+        Array.isArray(lastActionRef.current) &&
+        lastActionRef.current.length >= 9
+      ) {
+        lastActionRef.current = []; // Kosongkan lastAction setelah mencapai 10 item
+        console.log("lastActionRef has been reset to an empty array.");
+      }
+
+      const res = await submitToApi(dataToSubmit);
+
+      await handleApiResponse(res, status, setstatus, model);
+
+      const responseJson = JSON.parse(res);
+
+      lastActionRef.current = [
+        ...(Array.isArray(lastActionRef.current) ? lastActionRef.current : []),
+        ...responseJson,
+      ];
+
+      setdataAction((prevDataAction) => [
+        ...prevDataAction,
+        <>
+          {JSON.stringify(dataToSubmit)}
+          <br />
+          <>----------------response baru----------------</>
+          <br />
+          {res}
+          <br />
+          {relevantItems.length > 1 ? "Data with comments" : "No comments"}
+        </>,
+      ]);
     } catch (error) {
       console.error(error, "error");
     } finally {
@@ -164,14 +142,16 @@ export const useFetchDataComment = (user: string) => {
       if (!isScraping) return;
 
       // clear teks dari emoji
-      const clearString = removeEmoji(item?.content);
-
+      const codeOnly = () => {
+        return !item?.content ? "ready" : removeEmoji(item?.content);
+      };
+      const codeRes = codeOnly();
       const res = await getDataAction({ code: item?.code, model: model });
       try {
         setstatus({ ...status, msg: "Send to Queue..." });
         await submitQueue({
           action_name: res?.data[0]?.action_name,
-          text: clearString,
+          text: codeRes,
           queue_num: res?.data[0]?.code,
           time_start: res?.data[0]?.time_start,
           time_end: res?.data[0]?.time_end,
