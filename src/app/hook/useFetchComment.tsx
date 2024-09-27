@@ -38,7 +38,7 @@ export const useFetchDataComment = (user: string) => {
     },
   };
   const hasFetched = useRef(false);
-  const api = "apify_api_D1r0fSK2rzkhKitimCUPb0weIsVKMH1B9ThQ";
+  const api = "apify_api_r6LsVkPHzNHP8ZBnKbZRKdDbwuyGgc1CC6QT";
   const client = new ApifyClient({ token: api });
 
   const lastActionRef = useRef<any[]>([]);
@@ -61,6 +61,7 @@ export const useFetchDataComment = (user: string) => {
 
       const { items } = await client.dataset(run.defaultDatasetId).listItems();
       const relevantItems = items.slice(1);
+
       setstatus({ ...status, msg: "Proses data..." });
 
       if (!isScraping) return;
@@ -142,16 +143,14 @@ export const useFetchDataComment = (user: string) => {
       if (!isScraping) return;
 
       // clear teks dari emoji
-      const codeOnly = () => {
-        return !item?.content ? "ready" : removeEmoji(item?.content);
-      };
-      const codeRes = codeOnly();
+      const codeOnly = !item?.content ? "ready" : removeEmoji(item?.content);
+
       const res = await getDataAction({ code: item?.code, model: model });
       try {
         setstatus({ ...status, msg: "Send to Queue..." });
         await submitQueue({
           action_name: res?.data[0]?.action_name,
-          text: codeRes,
+          text: codeOnly,
           queue_num: res?.data[0]?.code,
           time_start: res?.data[0]?.time_start,
           time_end: res?.data[0]?.time_end,
@@ -159,13 +158,12 @@ export const useFetchDataComment = (user: string) => {
         });
       } catch (error) {
         console.error(`Failed to submit item with code ${item.code}:`, error);
-      } finally {
-        setstatus({ load: false, msg: "" });
       }
     }
   };
 
-  // process data to standart format request
+  const tempItems: any[] = []; // Temporary storage for processed items
+
   const processRelevantItems = ({ items }: { items: any[] }) => {
     const chatData: TDataChat[] = [];
     const newJoinData: TNewJoin[] = [];
@@ -175,27 +173,44 @@ export const useFetchDataComment = (user: string) => {
 
     // Proses item berdasarkan eventType
     items.forEach((item: any) => {
-      switch (item.eventType) {
-        case "chat":
-          if (chatData.length < 10 && item.nickname && item.comment) {
-            chatData.push({ username: item.nickname, comment: item.comment });
-          }
-          break;
-        case "gift":
-          if (giftData.length < 10 && item.nickname && item.giftName) {
-            giftData.push({ username: item.nickname, giftName: item.giftName });
-          }
-          break;
-        case "member":
-          if (newJoinData.length < 10 && item.nickname) {
-            newJoinData.push({ username: item.nickname });
-          }
-          break;
-        case "roomUser":
-          roomUserData = {
-            viewer: item.viewerCount || roomUserData.viewer,
-          };
-          break;
+      // Check if item already exists in tempItems (skip it if it does)
+      const isDuplicate = tempItems.some(
+        (tempItem) =>
+          tempItem.eventType === item.eventType &&
+          tempItem.nickname === item.nickname &&
+          tempItem.comment === item.comment && // For chat event
+          tempItem.giftName === item.giftName // For gift event
+      );
+
+      if (!isDuplicate) {
+        switch (item.eventType) {
+          case "chat":
+            if (chatData.length < 10 && item.nickname && item.comment) {
+              chatData.push({ username: item.nickname, comment: item.comment });
+            }
+            break;
+          case "gift":
+            if (giftData.length < 10 && item.nickname && item.giftName) {
+              giftData.push({
+                username: item.nickname,
+                giftName: item.giftName,
+              });
+            }
+            break;
+          case "member":
+            if (newJoinData.length < 10 && item.nickname) {
+              newJoinData.push({ username: item.nickname });
+            }
+            break;
+          case "roomUser":
+            roomUserData = {
+              viewer: item.viewerCount || roomUserData.viewer,
+            };
+            break;
+        }
+
+        // Add the current item to tempItems to track it for future scrapes
+        tempItems.push(item);
       }
     });
 

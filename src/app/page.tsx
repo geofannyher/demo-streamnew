@@ -112,7 +112,7 @@ const VideoPlayer = () => {
     } else {
       setIsAudioPlaying(false);
     }
-  }, [audioUrl]);
+  }, [isOnlyAudio, timeStart, audioUrl]);
 
   const handleProgress = (item: any) => {
     if (videoRef && videoRef.current) {
