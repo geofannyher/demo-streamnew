@@ -40,7 +40,8 @@ const Page = () => {
     const checkMessage = queueName.length;
     if (codeExists) {
       const regex = /^[^\s]+/;
-      const match: any = queueName.match(regex);
+      const match: RegExpMatchArray | null = queueName.match(regex);
+      if (!match) return message.error("Regex error");
       const res = await getDataAction({ code: match[0], model });
       if (res?.data && res?.data.length !== 0) {
         if (checkMessage > 2) {

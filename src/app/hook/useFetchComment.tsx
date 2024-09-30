@@ -38,7 +38,7 @@ export const useFetchDataComment = (user: string) => {
     },
   };
   const hasFetched = useRef(false);
-  const api = "apify_api_r6LsVkPHzNHP8ZBnKbZRKdDbwuyGgc1CC6QT";
+  const api = "apify_api_aNO2W9c1blPboc0CHkBHzqDSMFBZ124vRLxX";
   const client = new ApifyClient({ token: api });
 
   const lastActionRef = useRef<any[]>([]);
