@@ -1,10 +1,10 @@
 "use client";
 import { TDataChat, Tgift, TNewJoin, TRoomView } from "@/shared/Type/TestType";
 import { ApifyClient } from "apify-client";
+import emojiRegex from "emoji-regex";
 import { useEffect, useRef, useState } from "react";
 import { getDataAction, submitToApi } from "../services/action/action.service";
 import { submitQueue } from "../services/queue/queue.service";
-import emojiRegex from "emoji-regex";
 import { useDataStore } from "../store/useSaveData";
 
 export const useFetchDataComment = (user: string) => {
@@ -15,8 +15,7 @@ export const useFetchDataComment = (user: string) => {
     load: false,
     msg: "",
   });
-  const { setDataToSubmit, resetLastAction, addLastAction, lastAction } =
-    useDataStore();
+  const { setDataToSubmit } = useDataStore();
 
   const input = {
     usernames: [user],
@@ -92,7 +91,7 @@ export const useFetchDataComment = (user: string) => {
       const formattedData = processRelevantItems({ items: relevantItems });
       setDataToSubmit({
         ...formattedData,
-        lastAction: lastAction || [],
+        lastAction: lastActionRef.current || [],
       });
       // dataToSubmit = {
       //   ...formattedData,
