@@ -139,9 +139,11 @@ const Page = () => {
         {/* select section  */}
         <div className="grid grid-cols-12 gap-2">
           <div className="md:col-span-2 col-span-12 lg:col-span-2">
-            <h1 className="py-2 text-sm md:text-base lg:text-base">
+            <h1 className="py-2 text-xs md:text-xs xl:text-sm 2xl:text-sm">
               Pilih Model untuk tambah action
-              <i className="text-sm text-red-500">*</i>
+              <i className="text-xs text-red-500 md:text-xs xl:text-sm 2xl:text-sm">
+                *
+              </i>
             </h1>
             <Form>
               <Item name="model" className="w-full px-2">
@@ -158,7 +160,10 @@ const Page = () => {
           </div>
           <div className="col-span-12 lg:col-span-2 md:col-span-2">
             <h1 className="py-2 text-sm md:text-base lg:text-base">
-              Pilih Model Streaming <i className="text-sm text-red-500">*</i>
+              Pilih Model Streaming{" "}
+              <i className="text-xs text-red-500 md:text-xs xl:text-sm 2xl:text-sm">
+                *
+              </i>
             </h1>
             <Form>
               <Item name="model" className="w-full  px-2">
@@ -174,10 +179,13 @@ const Page = () => {
             </Form>
           </div>
           <div className="col-span-12 items-center lg:col-span-5 md:col-span-5">
-            <h1 className="py-2 text-sm md:text-base lg:text-base">
-              Custom Waktu Scrape <i className="text-xs">(Optional)</i>
+            <h1 className="py-2 text-xs md:text-xs xl:text-sm 2xl:text-sm">
+              Custom Waktu Scrape{" "}
+              <i className="text-xs md:text-xs xl:text-sm 2xl:text-sm">
+                (Optional)
+              </i>
             </h1>
-            <div className="flex w-full">
+            <div className="flex gap-5 md:gap-0 xl:gap-0 2xl:gap-0 w-full">
               <Form>
                 <Item name="model" className="w-full px-2">
                   <Input
@@ -193,7 +201,7 @@ const Page = () => {
                 save
               </Button>
               <div className="pl-5 w-full">
-                <h1 className="font-semibold text-sm">
+                <h1 className="font-semibold text-xs md:text-xs xl:text-sm 2xl:text-sm">
                   Time Scrape {time} /second
                 </h1>
                 <Switch
@@ -205,12 +213,18 @@ const Page = () => {
           </div>
           <div className="col-span-12  lg:col-span-2 md:col-span-2">
             <h1 className="py-2 text-sm md:text-base lg:text-base">
-              Masukkan id tiktok <i className="text-sm text-red-500">*</i>
+              Masukkan id tiktok{" "}
+              <i className="text-xs md:text-xs xl:text-sm 2xl:text-sm text-red-500">
+                *
+              </i>
             </h1>
-            <div className="flex py-2">
+            <div className="flex w-full py-2">
               <Form>
-                <Item name="model" className="w-full px-2">
+                <Item name="model" className=" px-2">
                   <Input
+                    style={{
+                      width: "100%",
+                    }}
                     size="large"
                     disabled={submituser.length > 1}
                     placeholder="masukkan id tiktok"

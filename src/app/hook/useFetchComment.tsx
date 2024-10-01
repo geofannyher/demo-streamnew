@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { getDataAction, submitToApi } from "../services/action/action.service";
 import { submitQueue } from "../services/queue/queue.service";
 import emojiRegex from "emoji-regex";
+import { useDataStore } from "../store/useSaveData";
 
 export const useFetchDataComment = (user: string) => {
   const [isScraping, setIsScraping] = useState(false);
@@ -14,6 +15,9 @@ export const useFetchDataComment = (user: string) => {
     load: false,
     msg: "",
   });
+  const { setDataToSubmit, resetLastAction, addLastAction, lastAction } =
+    useDataStore();
+
   const input = {
     usernames: [user],
     event_chat: true, //comment live
@@ -60,31 +64,40 @@ export const useFetchDataComment = (user: string) => {
       if (!isScraping) return;
 
       const { items } = await client.dataset(run.defaultDatasetId).listItems();
-      const relevantItems = items.slice(1);
-
+      // const relevantItems = items.slice(1);
+      const relevantItems = items;
+      console.log("hasil scrape", items);
       setstatus({ ...status, msg: "Proses data..." });
 
       if (!isScraping) return;
 
-      let dataToSubmit;
+      // let dataToSubmit;
 
-      if (relevantItems.length > 1 && relevantItems[1].eventType !== "status") {
-        const formattedData = processRelevantItems({ items: relevantItems });
+      // if (relevantItems.length >= 1) {
+      //   const formattedData = processRelevantItems({ items: relevantItems });
 
-        dataToSubmit = {
-          ...formattedData,
-          lastAction: lastActionRef.current || [],
-        };
-      } else {
-        dataToSubmit = {
-          chat: [],
-          gift: [],
-          newMember: [],
-          roomUser: {},
-          lastAction: lastActionRef.current || [],
-        };
-      }
-
+      //   dataToSubmit = {
+      //     ...formattedData,
+      //     lastAction: lastActionRef.current || [],
+      //   };
+      // } else {
+      //   dataToSubmit = {
+      //     chat: [],
+      //     gift: [],
+      //     newMember: [],
+      //     roomUser: {},
+      //     lastAction: lastActionRef.current || [],
+      //   };
+      // }
+      const formattedData = processRelevantItems({ items: relevantItems });
+      setDataToSubmit({
+        ...formattedData,
+        lastAction: lastAction || [],
+      });
+      // dataToSubmit = {
+      //   ...formattedData,
+      //   lastAction: lastActionRef.current || [],
+      // };
       // Jika lastActionRef.current mencapai 10 item, kosongkan
       if (
         Array.isArray(lastActionRef.current) &&
@@ -93,8 +106,13 @@ export const useFetchDataComment = (user: string) => {
         lastActionRef.current = []; // Kosongkan lastAction setelah mencapai 10 item
         console.log("lastActionRef has been reset to an empty array.");
       }
-
-      const res = await submitToApi(dataToSubmit);
+      // console.log("data yang akan di submit", dataToSubmit);
+      console.log(
+        "data yang akan di submit",
+        useDataStore.getState().dataToSubmit
+      );
+      // const res = await submitToApi(dataToSubmit);
+      const res = await submitToApi(useDataStore.getState().dataToSubmit);
 
       await handleApiResponse(res, status, setstatus, model);
 
@@ -105,10 +123,22 @@ export const useFetchDataComment = (user: string) => {
         ...responseJson,
       ];
 
+      // setdataAction((prevDataAction) => [
+      //   ...prevDataAction,
+      //   <>
+      //     {JSON.stringify(dataToSubmit)}
+      //     <br />
+      //     <>----------------response baru----------------</>
+      //     <br />
+      //     {res}
+      //     <br />
+      //     {relevantItems.length > 1 ? "Data with comments" : "No comments"}
+      //   </>,
+      // ]);
       setdataAction((prevDataAction) => [
         ...prevDataAction,
         <>
-          {JSON.stringify(dataToSubmit)}
+          {JSON.stringify(useDataStore.getState().dataToSubmit)}
           <br />
           <>----------------response baru----------------</>
           <br />
@@ -231,13 +261,14 @@ export const useFetchDataComment = (user: string) => {
 
   useEffect(() => {
     const modelIdle = localStorage.getItem("modelstream");
+    const time = localStorage.getItem("timeScrape");
+
     if (isScraping && modelIdle) {
       // Jalankan getDataComment langsung untuk pertama kali
       getDataComment({ model: modelIdle });
-
       intervalId.current = setInterval(() => {
         getDataComment({ model: modelIdle });
-      }, 20000);
+      }, Number(time));
     } else if (intervalId.current) {
       setstatus({ load: false, msg: "" });
       clearInterval(intervalId.current);
