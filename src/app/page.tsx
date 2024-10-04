@@ -54,6 +54,9 @@ const VideoPlayer = () => {
 
   useEffect(() => {
     fetchDataModel();
+    setAudioUrl(
+      "https://res.cloudinary.com/dcd1jeldi/video/upload/v1727774746/h9fqhyiwmx5hu7v5h3r3.mp3"
+    );
   }, []);
 
   useEffect(() => {
