@@ -6,9 +6,11 @@ import { useEffect, useRef, useState } from "react";
 import { getDataAction, submitToApi } from "../services/action/action.service";
 import { submitQueue } from "../services/queue/queue.service";
 import { useDataStore } from "../store/useSaveData";
+import { getDataService } from "../services/data/data.services";
 
 export const useFetchDataComment = (user: string) => {
   const [isScraping, setIsScraping] = useState(false);
+  const [key, setKey] = useState("");
   const intervalId = useRef<NodeJS.Timeout | null>(null);
   const [dataAction, setdataAction] = useState<any[]>([]);
   const [status, setstatus] = useState({
@@ -41,7 +43,7 @@ export const useFetchDataComment = (user: string) => {
     },
   };
   const hasFetched = useRef(false);
-  const api = "apify_api_aNO2W9c1blPboc0CHkBHzqDSMFBZ124vRLxX";
+  const api = key;
   const client = new ApifyClient({ token: api });
 
   const lastActionRef = useRef<any[]>([]);
@@ -278,6 +280,13 @@ export const useFetchDataComment = (user: string) => {
       if (intervalId.current) clearInterval(intervalId.current);
     };
   }, [isScraping]);
+  const fetchData = async () => {
+    const res: any = await getDataService();
+    setKey(res?.key);
+  };
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   return { dataAction, status, setIsScraping, isScraping };
 };
