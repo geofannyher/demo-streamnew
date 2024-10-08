@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useQueueData } from "../hook/useQueueData";
 import { Button, Form, Input, message, Select, Switch } from "antd";
 import { useListModel } from "../hook/useListModel";
@@ -12,7 +12,8 @@ import { LoadingOutlined } from "@ant-design/icons";
 import { deleteQueue, submitQueue } from "../services/queue/queue.service";
 import { LuTrash2 } from "react-icons/lu";
 import { IQueue } from "@/shared/Type/TestType";
-
+import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
+import { MdDragIndicator } from "react-icons/md";
 const Page = () => {
   const { data } = useListModel();
   const [queueName, setqueueName] = useState<string>("");
@@ -91,10 +92,6 @@ const Page = () => {
     setModel(value);
   };
 
-  const handleSubmitUser = () => {
-    setSubmituser(username);
-  };
-
   const fetchData = async () => {
     const getQueueTable: any = await supabase.from("queueTable").select("*");
     setQueueTable(getQueueTable?.data);
@@ -102,7 +99,6 @@ const Page = () => {
 
   useEffect(() => {
     fetchData();
-
     const channel = supabase
       .channel("schema-db-changes")
       .on(
@@ -133,17 +129,18 @@ const Page = () => {
     label: item.model_name,
   }));
   const sortedDataQueue = [...dataQueue].sort((a, b) => a.id - b.id);
+  const onDragEnd = useCallback((items: any) => {
+    console.log(items);
+  }, []);
+
   return (
     <div className="bg-zinc-50 h-[100dvh] p-5">
       <div className="container mx-auto">
         {/* select section  */}
         <div className="grid grid-cols-12 gap-2">
           <div className="md:col-span-2 col-span-12 lg:col-span-2">
-            <h1 className="py-2 text-xs md:text-xs xl:text-sm 2xl:text-sm">
-              Pilih Model untuk tambah action
-              <i className="text-xs text-red-500 md:text-xs xl:text-sm 2xl:text-sm">
-                *
-              </i>
+            <h1 className="py-2 text-sm md:text-base lg:text-base">
+              Pilih model untuk tambah action{" "}
             </h1>
             <Form>
               <Item name="model" className="w-full px-2">
@@ -158,9 +155,9 @@ const Page = () => {
               </Item>
             </Form>
           </div>
-          <div className="col-span-12 lg:col-span-2 md:col-span-2">
+          <div className="col-span-12 lg:col-span-3 md:col-span-3">
             <h1 className="py-2 text-sm md:text-base lg:text-base">
-              Pilih Model Streaming{" "}
+              Pilih model streaming{" "}
               <i className="text-xs text-red-500 md:text-xs xl:text-sm 2xl:text-sm">
                 *
               </i>
@@ -178,7 +175,7 @@ const Page = () => {
               </Item>
             </Form>
           </div>
-          <div className="col-span-12 items-center lg:col-span-5 md:col-span-5">
+          <div className="col-span-12 items-center lg:col-span-4 md:col-span-4">
             <h1 className="py-2 text-xs md:text-xs xl:text-sm 2xl:text-sm">
               Custom Waktu Scrape{" "}
               <i className="text-xs md:text-xs xl:text-sm 2xl:text-sm">
@@ -204,14 +201,10 @@ const Page = () => {
                 <h1 className="font-semibold text-xs md:text-xs xl:text-sm 2xl:text-sm">
                   Time Scrape {time} /second
                 </h1>
-                <Switch
-                  disabled={!username && !model}
-                  onChange={() => setIsScraping(!isScraping)}
-                />
               </div>
             </div>
           </div>
-          <div className="col-span-12  lg:col-span-2 md:col-span-2">
+          <div className="col-span-12 lg:col-span-3 md:col-span-3">
             <h1 className="py-2 text-sm md:text-base lg:text-base">
               Masukkan id tiktok{" "}
               <i className="text-xs md:text-xs xl:text-sm 2xl:text-sm text-red-500">
@@ -235,11 +228,12 @@ const Page = () => {
               </Form>
               <Button
                 size="large"
-                onClick={handleSubmitUser}
-                disabled={!username || submituser.length > 1}
+                onClick={() => {
+                  setIsScraping(!isScraping), setSubmituser(username);
+                }}
                 type="primary"
               >
-                save
+                {isScraping ? "Stop" : "Start"}
               </Button>
             </div>
           </div>
@@ -250,7 +244,7 @@ const Page = () => {
           <div className="grid py-2 grid-cols-1">
             <Button type="primary" className="cursor-not-allowed" size="large">
               {status?.msg}
-              <LoadingOutlined />
+              {status?.load && <LoadingOutlined />}
             </Button>
           </div>
         )}
@@ -345,7 +339,8 @@ const Page = () => {
                 <table className="text-sm text-left border text-gray-500 w-full">
                   <thead className="text-xs sticky top-0 text-gray-700 uppercase bg-gray-50">
                     <tr>
-                      <th scope="col" className="px-6 py-3">
+                      <th scope="col"></th>
+                      <th scope="col" className="pr-6 py-3">
                         Queue
                       </th>
                       <th scope="col" className="px-6 py-3">
@@ -356,28 +351,63 @@ const Page = () => {
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {queueTable &&
-                      queueTable.map((item, index) => (
-                        <tr className="bg-white" key={index}>
-                          <th
-                            scope="row"
-                            className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
-                          >
-                            {item?.action_name}
-                          </th>
-                          <td className="px-6 py-4">{item?.text}</td>
-                          <td className="px-6 py-4">
-                            <button
-                              onClick={() => deleteQueue({ id: item?.id })}
-                              className=" duration-300 hover:bg-purple-800 shadow-lg rounded-md right-0 bg-purple-500 text-white px-4 py-2 "
-                            >
-                              <LuTrash2 />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
+                  <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId="draggable-1">
+                      {(provided) => (
+                        <tbody
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                        >
+                          {queueTable &&
+                            queueTable.map((item, index) => {
+                              return (
+                                <Draggable
+                                  draggableId={item?.id.toString()}
+                                  index={index}
+                                  key={item?.id}
+                                >
+                                  {(provided) => (
+                                    <tr
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      className="bg-white"
+                                    >
+                                      <td
+                                        scope="row"
+                                        className="px-2 py-4 font-medium text-gray-900 whitespace-nowrap"
+                                      >
+                                        <MdDragIndicator />
+                                      </td>
+                                      <td
+                                        scope="row"
+                                        className="pr-6 py-4 font-medium text-gray-900 whitespace-nowrap"
+                                      >
+                                        {item?.action_name}
+                                      </td>
+                                      <td className="px-6 py-4">
+                                        {item?.text}
+                                      </td>
+                                      <td className="px-6 py-4">
+                                        <button
+                                          onClick={() =>
+                                            deleteQueue({ id: item?.id })
+                                          }
+                                          className=" duration-300 hover:bg-purple-800 shadow-lg rounded-md right-0 bg-purple-500 text-white px-4 py-2 "
+                                        >
+                                          <LuTrash2 />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </Draggable>
+                              );
+                            })}
+                          {provided.placeholder}
+                        </tbody>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
                 </table>
               </div>
             </div>

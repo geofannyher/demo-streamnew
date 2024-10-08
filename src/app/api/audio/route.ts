@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const { text, id_audio } = await req.json();
+
   try {
+    // Request the audio from ElevenLabs API
     const result = await axios.post(
       `https://api.elevenlabs.io/v1/text-to-speech/${id_audio}`,
       {
@@ -26,14 +28,23 @@ export async function POST(req: Request) {
       }
     );
 
-    const audioBuffer = Buffer.from(result.data, "binary");
+    // Prepare to upload the audio to Cloudinary
+    const cloudinaryUploadUrl = `https://api.cloudinary.com/v1_1/dcd1jeldi/auto/upload`;
 
-    return new Response(audioBuffer, {
+    const mainAudioBlob = new Blob([result?.data], { type: "audio/mpeg" });
+    const formData = new FormData();
+    formData.append("file", mainAudioBlob, "audio.mp3");
+    formData.append("upload_preset", "kantor");
+
+    // Upload the audio file to Cloudinary
+    const cloudinaryResponse = await axios.post(cloudinaryUploadUrl, formData, {
       headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Length": audioBuffer.length.toString(),
+        "Content-Type": "multipart/form-data",
       },
     });
+
+    const secureUrl = cloudinaryResponse.data.secure_url;
+    return NextResponse.json({ secure_url: secureUrl });
   } catch (error: any) {
     return NextResponse.json({ error: error.message });
   }

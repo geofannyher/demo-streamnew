@@ -93,7 +93,6 @@ const VideoPlayer = () => {
   }, []);
 
   useEffect(() => {
-    console.log(isOnlyAudio, audioUrl, "cek");
     if (audioUrl && audioUrl !== "only" && videoRef.current) {
       setIsAudioPlaying(true);
       videoRef.current.seekTo(timeStart); // Set the video start time

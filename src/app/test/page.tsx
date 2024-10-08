@@ -1,5 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import { socket } from "@/lib/socket";
+import axios from "axios";
+import { useEffect, useState } from "react";
 
 interface Month {
   value: number;
@@ -11,7 +13,7 @@ const WetonCalculator: React.FC = () => {
   const [month, setMonth] = useState<string>("");
   const [year, setYear] = useState<string>("");
   const [result, setResult] = useState<string>("");
-
+  const [data, setdata] = useState("");
   const months: Month[] = [
     { value: 1, label: "Januari" },
     { value: 2, label: "Februari" },
@@ -88,40 +90,83 @@ const WetonCalculator: React.FC = () => {
     setResult(weton);
   };
 
+  const handleTest = (e: any) => {
+    e.preventDefault();
+    const msg = e?.target[0]?.value;
+    socket.emit("send_msg", msg);
+  };
+
+  useEffect(() => {
+    function handleReveive(event: string) {
+      setdata(event);
+    }
+
+    socket.on("receive_msg", handleReveive);
+    return () => {
+      socket.off("receive_msg", handleReveive);
+    };
+  }, []);
+
+  const handleT = async (e: any) => {
+    e.preventDefault();
+    const res = await axios.post("http://localhost:3000/api/audio", {
+      id_audio: "rWUem4xflCzc0bTEystB",
+      text: "gelooo",
+    });
+    console.log(res);
+  };
   return (
-    <div>
-      <h1>Hitung Weton</h1>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="number"
-          placeholder="Tanggal"
-          value={day}
-          onChange={(e) => setDay(e.target.value)}
-          required
-        />
-        <select
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          required
-        >
-          <option value="">Pilih Bulan</option>
-          {months.map((month) => (
-            <option key={month.value} value={month.value}>
-              {month.label}
-            </option>
-          ))}
-        </select>
-        <input
-          type="number"
-          placeholder="Tahun"
-          value={year}
-          onChange={(e) => setYear(e.target.value)}
-          required
-        />
-        <button type="submit">Hitung</button>
-      </form>
-      {result && <h2>Hasil: {result}</h2>}
-    </div>
+    <>
+      <div>
+        <h1>Hitung Weton</h1>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="number"
+            placeholder="Tanggal"
+            value={day}
+            onChange={(e) => setDay(e.target.value)}
+            required
+          />
+          <select
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            required
+          >
+            <option value="">Pilih Bulan</option>
+            {months.map((month) => (
+              <option key={month.value} value={month.value}>
+                {month.label}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            placeholder="Tahun"
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+            required
+          />
+          <button type="submit">Hitung</button>
+        </form>
+        {result && <h2>Hasil: {result}</h2>}
+      </div>
+      <div>
+        <h1>Test Socket</h1>
+        <form onSubmit={handleTest}>
+          <input type="text" placeholder="masukkan pesan " required />
+
+          <button type="submit">Hitung</button>
+        </form>
+        <h1>{data}</h1>
+      </div>
+      <div>
+        <h1>Test Audio</h1>
+        <form onSubmit={handleT}>
+          <button type="submit">Hitung</button>
+        </form>
+        <h1>{data}</h1>
+      </div>
+    </>
   );
 };
 

@@ -1,22 +1,25 @@
 "use client";
 import { TDataChat, Tgift, TNewJoin, TRoomView } from "@/shared/Type/TestType";
 import { ApifyClient } from "apify-client";
-import emojiRegex from "emoji-regex";
 import { useEffect, useRef, useState } from "react";
 import { getDataAction, submitToApi } from "../services/action/action.service";
+import { getDataService } from "../services/data/data.services";
 import { submitQueue } from "../services/queue/queue.service";
 import { useDataStore } from "../store/useSaveData";
-import { getDataService } from "../services/data/data.services";
-
+import { removeEmoji } from "@/utils/removeEmoji";
+interface Isettings {
+  key: string;
+  switch: boolean;
+}
 export const useFetchDataComment = (user: string) => {
   const [isScraping, setIsScraping] = useState(false);
-  const [key, setKey] = useState("");
-  const intervalId = useRef<NodeJS.Timeout | null>(null);
-  const [dataAction, setdataAction] = useState<any[]>([]);
+  const [settings, setSettings] = useState({} as Isettings);
   const [status, setstatus] = useState({
     load: false,
     msg: "",
   });
+  const intervalId = useRef<NodeJS.Timeout | null>(null);
+  const hasFetched = useRef(false);
   const { setDataToSubmit } = useDataStore();
 
   const input = {
@@ -42,63 +45,39 @@ export const useFetchDataComment = (user: string) => {
       apifyProxyGroups: ["RESIDENTIAL"],
     },
   };
-  const hasFetched = useRef(false);
-  const api = key;
+  const api = settings?.key;
   const client = new ApifyClient({ token: api });
 
   const lastActionRef = useRef<any[]>([]);
+  // Temporary storage for processed items
+  const tempItems: any[] = [];
 
+  //scrape data comment
   const getDataComment = async ({ model }: { model: string }) => {
-    const time = localStorage.getItem("timeScrape");
-
     if (!isScraping || hasFetched.current) return;
     hasFetched.current = true;
-
+    const time = localStorage.getItem("timeScrape");
     try {
       setstatus({ msg: "Sedang Scrape data...", load: true });
       const run = await client.actor("iBGygcuAxeHUkYsq9").call(input, {
-        timeout: time ? Number(time) : 20,
-        memory: 128,
+        timeout: time ? parseInt(time) : 20,
+        memory: 512,
         build: "latest",
       });
-
-      if (!isScraping) return;
 
       const { items } = await client.dataset(run.defaultDatasetId).listItems();
       // const relevantItems = items.slice(1);
       const relevantItems = items;
       console.log("hasil scrape", items);
-      setstatus({ ...status, msg: "Proses data..." });
+      setstatus({ load: true, msg: "Proses data..." });
 
-      if (!isScraping) return;
-
-      // let dataToSubmit;
-
-      // if (relevantItems.length >= 1) {
-      //   const formattedData = processRelevantItems({ items: relevantItems });
-
-      //   dataToSubmit = {
-      //     ...formattedData,
-      //     lastAction: lastActionRef.current || [],
-      //   };
-      // } else {
-      //   dataToSubmit = {
-      //     chat: [],
-      //     gift: [],
-      //     newMember: [],
-      //     roomUser: {},
-      //     lastAction: lastActionRef.current || [],
-      //   };
-      // }
       const formattedData = processRelevantItems({ items: relevantItems });
+
       setDataToSubmit({
         ...formattedData,
         lastAction: lastActionRef.current || [],
       });
-      // dataToSubmit = {
-      //   ...formattedData,
-      //   lastAction: lastActionRef.current || [],
-      // };
+
       // Jika lastActionRef.current mencapai 10 item, kosongkan
       if (
         Array.isArray(lastActionRef.current) &&
@@ -115,7 +94,7 @@ export const useFetchDataComment = (user: string) => {
       // const res = await submitToApi(dataToSubmit);
       const res = await submitToApi(useDataStore.getState().dataToSubmit);
 
-      await handleApiResponse(res, status, setstatus, model);
+      await handleApiResponse(res, setstatus, model);
 
       const responseJson = JSON.parse(res);
 
@@ -123,31 +102,6 @@ export const useFetchDataComment = (user: string) => {
         ...(Array.isArray(lastActionRef.current) ? lastActionRef.current : []),
         ...responseJson,
       ];
-
-      // setdataAction((prevDataAction) => [
-      //   ...prevDataAction,
-      //   <>
-      //     {JSON.stringify(dataToSubmit)}
-      //     <br />
-      //     <>----------------response baru----------------</>
-      //     <br />
-      //     {res}
-      //     <br />
-      //     {relevantItems.length > 1 ? "Data with comments" : "No comments"}
-      //   </>,
-      // ]);
-      setdataAction((prevDataAction) => [
-        ...prevDataAction,
-        <>
-          {JSON.stringify(useDataStore.getState().dataToSubmit)}
-          <br />
-          <>----------------response baru----------------</>
-          <br />
-          {res}
-          <br />
-          {relevantItems.length > 1 ? "Data with comments" : "No comments"}
-        </>,
-      ]);
     } catch (error) {
       console.error(error, "error");
     } finally {
@@ -155,51 +109,11 @@ export const useFetchDataComment = (user: string) => {
     }
   };
 
-  // submit to queueu
-  const handleApiResponse = async (
-    res: string,
-    status: any,
-    setstatus: any,
-    model: string
-  ) => {
-    if (!isScraping || res === "error") {
-      setstatus({ load: false, msg: "Ada problem di API" });
-      return;
-    }
-    // clear string json
-    const arrayData = JSON.parse(res);
-
-    for (const item of arrayData) {
-      // Hentikan proses jika isScraping false
-      if (!isScraping) return;
-
-      // clear teks dari emoji
-      const codeOnly = !item?.content ? "ready" : removeEmoji(item?.content);
-
-      const res = await getDataAction({ code: item?.code, model: model });
-      try {
-        setstatus({ ...status, msg: "Send to Queue..." });
-        await submitQueue({
-          action_name: res?.data[0]?.action_name,
-          text: codeOnly,
-          queue_num: res?.data[0]?.code,
-          time_start: res?.data[0]?.time_start,
-          time_end: res?.data[0]?.time_end,
-          id_audio: res?.data[0]?.id_audio,
-        });
-      } catch (error) {
-        console.error(`Failed to submit item with code ${item.code}:`, error);
-      }
-    }
-  };
-
-  const tempItems: any[] = []; // Temporary storage for processed items
-
+  // process data comment
   const processRelevantItems = ({ items }: { items: any[] }) => {
     const chatData: TDataChat[] = [];
     const newJoinData: TNewJoin[] = [];
     const giftData: Tgift[] = [];
-
     let roomUserData: TRoomView = {};
 
     // Proses item berdasarkan eventType
@@ -251,14 +165,52 @@ export const useFetchDataComment = (user: string) => {
       newMember: newJoinData,
       roomUser: roomUserData,
     };
-
     return formattedData;
   };
 
-  function removeEmoji(str: string) {
-    const regex = emojiRegex();
-    return str.replace(regex, "");
-  }
+  // submit to queueu
+  const handleApiResponse = async (
+    res: string,
+    setstatus: any,
+    model: string
+  ) => {
+    if (!isScraping) return;
+    if (res === "error") {
+      setstatus({ load: false, msg: "Ada problem di API" });
+      return;
+    }
+    // clear string json
+    const arrayData = JSON.parse(res);
+
+    for (const item of arrayData) {
+      // Hentikan proses jika isScraping false
+      if (!isScraping) break;
+
+      // clear teks dari emoji
+      const codeOnly = !item?.content ? "ready" : removeEmoji(item?.content);
+
+      const res = await getDataAction({ code: item?.code, model });
+      try {
+        setstatus({ load: true, msg: "Send to Queue..." });
+        await submitQueue({
+          action_name: res?.data[0]?.action_name,
+          text: codeOnly,
+          queue_num: res?.data[0]?.code,
+          time_start: res?.data[0]?.time_start,
+          time_end: res?.data[0]?.time_end,
+          id_audio: res?.data[0]?.id_audio,
+        });
+      } catch (error) {
+        console.error(`Failed to submit item with code ${item.code}:`, error);
+      }
+    }
+    setstatus({ msg: "", load: false });
+  };
+
+  const fetchData = async () => {
+    const res = await getDataService();
+    setSettings(res);
+  };
 
   useEffect(() => {
     const modelIdle = localStorage.getItem("modelstream");
@@ -267,9 +219,12 @@ export const useFetchDataComment = (user: string) => {
     if (isScraping && modelIdle) {
       // Jalankan getDataComment langsung untuk pertama kali
       getDataComment({ model: modelIdle });
-      intervalId.current = setInterval(() => {
-        getDataComment({ model: modelIdle });
-      }, Number(time));
+      intervalId.current = setInterval(
+        () => {
+          getDataComment({ model: modelIdle });
+        },
+        Number(time) ? Number(time) + 5 : 25
+      );
     } else if (intervalId.current) {
       setstatus({ load: false, msg: "" });
       clearInterval(intervalId.current);
@@ -279,14 +234,11 @@ export const useFetchDataComment = (user: string) => {
     return () => {
       if (intervalId.current) clearInterval(intervalId.current);
     };
-  }, [isScraping]);
-  const fetchData = async () => {
-    const res: any = await getDataService();
-    setKey(res?.key);
-  };
+  }, [isScraping, getDataComment]);
+
   useEffect(() => {
     fetchData();
   }, []);
 
-  return { dataAction, status, setIsScraping, isScraping };
+  return { status, setIsScraping, getDataComment, isScraping };
 };

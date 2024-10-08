@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 
 export const getDataService = async () => {
   try {
-    const { data, error } = await supabase.from("data").select("key").single();
+    const { data, error } = await supabase.from("data").select("*").single();
     if (error) {
       return error;
     }
