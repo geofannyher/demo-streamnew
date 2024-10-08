@@ -83,10 +83,13 @@ app.prepare().then(() => {
         await deleteQueueItem(id);
       } else {
         try {
-          const res = await axios.post("http://localhost:3000/api/audio", {
-            text,
-            id_audio,
-          });
+          const res = await axios.post(
+            "https://demo-streamnew.vercel.app/api/audio",
+            {
+              text,
+              id_audio,
+            }
+          );
 
           console.log(res?.data?.secure_url, "url teks");
           console.log(time_start, time_end, "ini waktu teks dikirim");

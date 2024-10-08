@@ -109,10 +109,13 @@ const WetonCalculator: React.FC = () => {
 
   const handleT = async (e: any) => {
     e.preventDefault();
-    const res = await axios.post("http://localhost:3000/api/audio", {
-      id_audio: "rWUem4xflCzc0bTEystB",
-      text: "gelooo",
-    });
+    const res = await axios.post(
+      "https://demo-streamnew.vercel.app/api/audio",
+      {
+        id_audio: "rWUem4xflCzc0bTEystB",
+        text: "gelooo",
+      }
+    );
     console.log(res);
   };
   return (
