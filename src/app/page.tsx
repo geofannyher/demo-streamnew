@@ -18,7 +18,6 @@ const VideoPlayer = () => {
   const [isOnlyAudio, setIsOnlyAudio] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
 
-  console.log(videoIdle);
   const fetchDataModel = async () => {
     try {
       const { data, error } = await supabase.from("model").select("*");
@@ -142,6 +141,7 @@ const VideoPlayer = () => {
     setIsAudioPlaying(false);
     socket.emit("audio_finished");
   };
+  console.log(modelStream);
 
   return (
     <div className="grid grid-cols-3 h-[100dvh]">
