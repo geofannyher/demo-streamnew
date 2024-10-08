@@ -234,7 +234,7 @@ export const useFetchDataComment = (user: string) => {
     return () => {
       if (intervalId.current) clearInterval(intervalId.current);
     };
-  }, [isScraping, getDataComment]);
+  }, [isScraping]);
 
   useEffect(() => {
     fetchData();
