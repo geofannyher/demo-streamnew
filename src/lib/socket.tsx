@@ -2,7 +2,7 @@
 
 import { io } from "socket.io-client";
 // local
-export const socket = io("https://demo-streamnew.vercel.app", {
+export const socket = io("https://demo-streamnew.onrender.com", {
   // render host
   // export const socket = io("https://stream-socket-k5in.onrender.com", {
   // avatara host
