@@ -18,6 +18,7 @@ const VideoPlayer = () => {
   const [isOnlyAudio, setIsOnlyAudio] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
 
+  console.log(videoIdle);
   const fetchDataModel = async () => {
     try {
       const { data, error } = await supabase.from("model").select("*");
