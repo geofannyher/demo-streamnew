@@ -14,6 +14,7 @@ import { LuTrash2 } from "react-icons/lu";
 import { IQueue } from "@/shared/Type/TestType";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { MdDragIndicator } from "react-icons/md";
+import { DropResult } from "react-beautiful-dnd";
 const Page = () => {
   const { data } = useListModel();
   const [queueName, setqueueName] = useState<string>("");
@@ -129,9 +130,48 @@ const Page = () => {
     label: item.model_name,
   }));
   const sortedDataQueue = [...dataQueue].sort((a, b) => a.id - b.id);
-  const onDragEnd = useCallback((items: any) => {
-    console.log(items);
-  }, []);
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, source } = result;
+
+    // Cek jika tidak ada destination
+    if (!destination) return;
+
+    // Cek jika item tidak berpindah posisi
+    if (destination.index === source.index) return;
+
+    // Buat salinan array queueTable
+    const updatedQueue = Array.from(queueTable);
+
+    // Hapus item dari posisi awal
+    const [movedItem] = updatedQueue.splice(source.index, 1);
+
+    // Masukkan item ke posisi baru
+    updatedQueue.splice(destination.index, 0, movedItem);
+
+    // Perbarui state lokal
+    setQueueTable(updatedQueue);
+
+    // Update posisi berdasarkan urutan baru
+    try {
+      const updates = updatedQueue.map((item, index) => ({
+        id: item.id, // ID lama
+        position: index + 1, // Tentukan posisi baru
+      }));
+
+      // Lakukan batch update ke Supabase
+      const { error } = await supabase
+        .from("queueTable")
+        .upsert(updates, { onConflict: "id" }); // Pastikan menghindari duplikasi
+
+      if (error) {
+        console.error("Error updating position:", error);
+      } else {
+        console.log("Positions updated successfully");
+      }
+    } catch (err) {
+      console.error("Error while updating positions:", err);
+    }
+  };
 
   return (
     <div className="bg-zinc-50 h-[100dvh] p-5">

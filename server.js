@@ -57,11 +57,7 @@ app.prepare().then(() => {
 
     isProcessing = true; // Tandai bahwa pemrosesan sedang berjalan
 
-    const { data, error } = await supabase
-      .from("queueTable")
-      .select("*")
-      .order("id", { ascending: true })
-      .limit(1); // Ambil data pertama dari antrian
+    const { data, error } = await supabase.from("queueTable").select("*");
 
     if (error) {
       console.error("Error fetching data from Supabase:", error);
@@ -70,7 +66,9 @@ app.prepare().then(() => {
     }
     console.log(data);
     if (data.length > 0) {
-      const queueItem = data[0];
+      console.log(data, "data data ");
+      const dataSort = data.sort((a, b) => a.position - b.position);
+      const queueItem = dataSort[0];
       const { id, text, time_start, time_end, id_audio } = queueItem;
       if (text === "ready") {
         console.log("Mengirim hanya durasi...");
