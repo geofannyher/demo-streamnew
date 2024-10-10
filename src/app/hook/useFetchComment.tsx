@@ -4,7 +4,7 @@ import { ApifyClient } from "apify-client";
 import { useEffect, useRef, useState } from "react";
 import { getDataAction, submitToApi } from "../services/action/action.service";
 import { getDataService } from "../services/data/data.services";
-import { submitQueue } from "../services/queue/queue.service";
+import { getQueueTable, submitQueue } from "../services/queue/queue.service";
 import { useDataStore } from "../store/useSaveData";
 import { removeEmoji } from "@/utils/removeEmoji";
 interface Isettings {
@@ -190,6 +190,26 @@ export const useFetchDataComment = (user: string) => {
       const codeOnly = !item?.content ? "ready" : removeEmoji(item?.content);
 
       const res = await getDataAction({ code: item?.code, model });
+      const checkAll = await getQueueTable();
+
+      let newVariable;
+      if (checkAll?.data) {
+        // Mengurutkan berdasarkan kolom position (dari yang tertinggi ke terendah)
+        const sortedData = checkAll?.data.sort(
+          (a: any, b: any) => b.position - a.position
+        );
+
+        console.log(sortedData);
+        // Mengambil item dengan posisi tertinggi
+        const lastItem: any = sortedData[0];
+
+        if (lastItem?.position == null) {
+          newVariable = 1;
+        } else {
+          // Menyimpan lastItem ke dalam variabel baru
+          newVariable = lastItem?.position;
+        }
+      }
       try {
         setstatus({ load: true, msg: "Send to Queue..." });
         await submitQueue({
@@ -199,6 +219,7 @@ export const useFetchDataComment = (user: string) => {
           time_start: res?.data[0]?.time_start,
           time_end: res?.data[0]?.time_end,
           id_audio: res?.data[0]?.id_audio,
+          position: newVariable + 1,
         });
       } catch (error) {
         console.error(`Failed to submit item with code ${item.code}:`, error);

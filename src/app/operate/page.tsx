@@ -69,7 +69,6 @@ const Page = () => {
           newVariable = lastItem?.position;
         }
       }
-      console.log(newVariable);
       if (res?.data && res?.data.length !== 0) {
         if (checkMessage > 2) {
           try {
