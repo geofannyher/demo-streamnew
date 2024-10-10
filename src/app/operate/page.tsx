@@ -305,7 +305,7 @@ const Page = () => {
                   ) : dataQueue.length === 0 ? (
                     <tr className="bg-white">
                       <th
-                        colSpan={2}
+                        colSpan={3}
                         scope="row"
                         className="px-6 py-4 font-medium text-center text-violet-500 whitespace-nowrap"
                       >
@@ -371,7 +371,11 @@ const Page = () => {
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
                                       {...provided.dragHandleProps}
-                                      className="bg-white"
+                                      className={`${
+                                        index % 2 == 0
+                                          ? "bg-white"
+                                          : "bg-gray-50"
+                                      }`}
                                     >
                                       <td
                                         scope="row"

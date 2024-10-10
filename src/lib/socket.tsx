@@ -2,7 +2,7 @@
 
 import { io } from "socket.io-client";
 // local
-export const socket = io("https://demo-streamnew.onrender.com", {
+export const socket = io("http://localhost:3000", {
   // render host
   // export const socket = io("https://stream-socket-k5in.onrender.com", {
   // avatara host
