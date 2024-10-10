@@ -9,7 +9,11 @@ import { getDataAction } from "../services/action/action.service";
 import { useFetchDataComment } from "../hook/useFetchComment";
 import { useChangeTime } from "../hook/useChangeTime";
 import { LoadingOutlined } from "@ant-design/icons";
-import { deleteQueue, submitQueue } from "../services/queue/queue.service";
+import {
+  deleteQueue,
+  getQueueTable,
+  submitQueue,
+} from "../services/queue/queue.service";
 import { LuTrash2 } from "react-icons/lu";
 import { IQueue } from "@/shared/Type/TestType";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
@@ -45,6 +49,27 @@ const Page = () => {
       const match: RegExpMatchArray | null = queueName.match(regex);
       if (!match) return message.error("Regex error");
       const res = await getDataAction({ code: match[0], model });
+      const checkAll = await getQueueTable();
+
+      let newVariable;
+      if (checkAll?.data) {
+        // Mengurutkan berdasarkan kolom position (dari yang tertinggi ke terendah)
+        const sortedData = checkAll?.data.sort(
+          (a: any, b: any) => b.position - a.position
+        );
+
+        console.log(sortedData);
+        // Mengambil item dengan posisi tertinggi
+        const lastItem: any = sortedData[0];
+
+        if (lastItem?.position == null) {
+          newVariable = 1;
+        } else {
+          // Menyimpan lastItem ke dalam variabel baru
+          newVariable = lastItem?.position;
+        }
+      }
+      console.log(newVariable);
       if (res?.data && res?.data.length !== 0) {
         if (checkMessage > 2) {
           try {
@@ -56,6 +81,7 @@ const Page = () => {
               time_start: res?.data[0]?.time_start,
               time_end: res?.data[0]?.time_end,
               id_audio: res?.data[0]?.id_audio,
+              position: newVariable + 1,
             });
             setqueueName("");
             setLoading(false);
@@ -73,6 +99,7 @@ const Page = () => {
             time_start: res?.data[0]?.time_start,
             time_end: res?.data[0]?.time_end,
             id_audio: res?.data[0]?.id_audio,
+            position: newVariable + 1,
           });
           setqueueName("");
           setLoading(false);

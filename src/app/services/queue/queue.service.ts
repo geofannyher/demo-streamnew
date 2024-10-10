@@ -15,6 +15,7 @@ export interface ISubmitQueue {
   time_end: string;
   time_start: string;
   id_audio: string;
+  position: number;
 }
 export const getQueueData = async ({
   model_name,
@@ -31,6 +32,14 @@ export const getQueueData = async ({
     return { data, error: null } as PostgrestResponse<Action>;
   }
 };
+export const getQueueTable = async (): Promise<PostgrestResponse<Action>> => {
+  const { data, error } = await supabase.from("queueTable").select("*");
+  if (error) {
+    return { data: null, error } as PostgrestResponse<Action>;
+  } else {
+    return { data, error: null } as PostgrestResponse<Action>;
+  }
+};
 
 export const submitQueue = async ({
   action_name,
@@ -39,6 +48,7 @@ export const submitQueue = async ({
   time_end,
   time_start,
   id_audio,
+  position,
 }: ISubmitQueue) => {
   const { data, error } = await supabase.from("queueTable").insert({
     action_name,
