@@ -1,7 +1,7 @@
+import { ProviderAntd } from "@/lib/ProviderAntd";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ProviderAntd } from "@/lib/ProviderAntd";
 
 const inter = Inter({ subsets: ["latin"] });
 

@@ -81,7 +81,8 @@ app.prepare().then(() => {
         await deleteQueueItem(id);
       } else {
         try {
-          const res = await axios.post("http://localhost:3000/api/audio", {
+          // const res = await axios.post("http://localhost:3000/api/audio", {
+          const res = await axios.post("demostream.mainavatara.com/api/audio", {
             text,
             id_audio,
           });
