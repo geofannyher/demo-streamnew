@@ -1,24 +1,27 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
-import { useQueueData } from "../hook/useQueueData";
-import { Button, Form, Input, message, Select, Switch } from "antd";
-import { useListModel } from "../hook/useListModel";
 import { supabase } from "@/lib/supabase";
-import { getDataAction } from "../services/action/action.service";
-import { useFetchDataComment } from "../hook/useFetchComment";
-import { useChangeTime } from "../hook/useChangeTime";
+import { IQueue } from "@/shared/Type/TestType";
 import { LoadingOutlined } from "@ant-design/icons";
+import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
+import { Button, Form, Input, message, Select } from "antd";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { DropResult } from "react-beautiful-dnd";
+import { BiReset } from "react-icons/bi";
+import { LuTrash2 } from "react-icons/lu";
+import { MdDragIndicator } from "react-icons/md";
+import { useChangeTime } from "../hook/useChangeTime";
+import { useFetchDataComment } from "../hook/useFetchComment";
+import { useListModel } from "../hook/useListModel";
+import { useQueueData } from "../hook/useQueueData";
+import { getDataAction } from "../services/action/action.service";
 import {
   deleteQueue,
   getQueueTable,
   submitQueue,
 } from "../services/queue/queue.service";
-import { LuTrash2 } from "react-icons/lu";
-import { IQueue } from "@/shared/Type/TestType";
-import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
-import { MdDragIndicator } from "react-icons/md";
-import { DropResult } from "react-beautiful-dnd";
+import { getReset } from "../services/reset/reset.service";
 const Page = () => {
   const { data } = useListModel();
   const [queueName, setqueueName] = useState<string>("");
@@ -32,7 +35,7 @@ const Page = () => {
   });
   const { handleChangeTime, time, handleSave } = useChangeTime();
   const { status, setIsScraping, isScraping } = useFetchDataComment(submituser);
-
+  const router = useRouter();
   const handleSendQueue = async () => {
     if (!model) {
       return message.error("Pilih model terlebih dahulu");
@@ -198,9 +201,15 @@ const Page = () => {
       console.error("Error while updating positions:", err);
     }
   };
-
+  const handleReset = async () => {
+    const res: any = await getReset({ id: "duwi", star: "stream_director2" });
+    console.log(res);
+    if (res?.status === 200 && res?.data.message === "Success") {
+      return message.success("Success Reset ID");
+    }
+  };
   return (
-    <div className="bg-zinc-50 h-[100dvh] p-5">
+    <div className="bg-zinc-50 relative h-[100dvh] p-5">
       <div className="container mx-auto">
         {/* select section  */}
         <div className="grid grid-cols-12 gap-2">
@@ -263,11 +272,19 @@ const Page = () => {
               <Button size="large" type="primary" onClick={handleSave}>
                 save
               </Button>
-              <div className="pl-5 w-full">
+              <div className="px-2">
                 <h1 className="font-semibold text-xs md:text-xs xl:text-sm 2xl:text-sm">
-                  Time Scrape {time} /second
+                  {time} /second
                 </h1>
               </div>
+              <Button
+                onClick={handleReset}
+                type="primary"
+                size="large"
+                className="w-10"
+              >
+                <BiReset />
+              </Button>
             </div>
           </div>
           <div className="col-span-12 lg:col-span-3 md:col-span-3">
