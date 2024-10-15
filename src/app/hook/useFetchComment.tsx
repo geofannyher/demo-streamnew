@@ -113,10 +113,11 @@ export const useFetchDataComment = (user: string) => {
           {res}
           <br />
           {relevantItems.length > 1 ? (
-            <h1 className="font-bold">"Data dengan ada comments"</h1>
+            <h1 className="font-bold">'Data dengan ada comments'</h1>
           ) : (
-            <h1 className="font-bold">"No comments"</h1>
+            <h1 className="font-bold">'No comments'</h1>
           )}
+
           <br />
         </>,
       ]);
