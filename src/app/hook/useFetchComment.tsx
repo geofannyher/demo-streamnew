@@ -18,6 +18,7 @@ export const useFetchDataComment = (user: string) => {
     load: false,
     msg: "",
   });
+  const [dataAction, setdataAction] = useState<any[]>([]);
   const intervalId = useRef<NodeJS.Timeout | null>(null);
   const hasFetched = useRef(false);
   const { setDataToSubmit } = useDataStore();
@@ -70,7 +71,6 @@ export const useFetchDataComment = (user: string) => {
       const relevantItems = items;
       console.log("hasil scrape", items);
       setstatus({ load: true, msg: "Proses data..." });
-
       const formattedData = processRelevantItems({ items: relevantItems });
 
       setDataToSubmit({
@@ -102,6 +102,24 @@ export const useFetchDataComment = (user: string) => {
         ...(Array.isArray(lastActionRef.current) ? lastActionRef.current : []),
         ...responseJson,
       ];
+
+      setdataAction((prevDataAction) => [
+        ...prevDataAction,
+        <>
+          {JSON.stringify(useDataStore.getState().dataToSubmit)}
+          <br />
+          <>----------------response baru----------------</>
+          <br />
+          {res}
+          <br />
+          {relevantItems.length > 1 ? (
+            <h1 className="font-bold">"Data dengan ada comments"</h1>
+          ) : (
+            <h1 className="font-bold">"No comments"</h1>
+          )}
+          <br />
+        </>,
+      ]);
     } catch (error) {
       console.error(error, "error");
     } finally {
@@ -199,7 +217,6 @@ export const useFetchDataComment = (user: string) => {
           (a: any, b: any) => b.position - a.position
         );
 
-        console.log(sortedData);
         // Mengambil item dengan posisi tertinggi
         const lastItem: any = sortedData[0];
 
@@ -261,5 +278,5 @@ export const useFetchDataComment = (user: string) => {
     fetchData();
   }, []);
 
-  return { status, setIsScraping, getDataComment, isScraping };
+  return { status, setIsScraping, getDataComment, isScraping, dataAction };
 };

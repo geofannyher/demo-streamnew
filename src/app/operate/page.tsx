@@ -22,6 +22,7 @@ import {
   submitQueue,
 } from "../services/queue/queue.service";
 import { getReset } from "../services/reset/reset.service";
+import { useDataStore } from "../store/useSaveData";
 const Page = () => {
   const { data } = useListModel();
   const [queueName, setqueueName] = useState<string>("");
@@ -34,8 +35,8 @@ const Page = () => {
     model_name: model,
   });
   const { handleChangeTime, time, handleSave } = useChangeTime();
-  const { status, setIsScraping, isScraping } = useFetchDataComment(submituser);
-  const router = useRouter();
+  const { status, setIsScraping, isScraping, dataAction } =
+    useFetchDataComment(submituser);
   const handleSendQueue = async () => {
     if (!model) {
       return message.error("Pilih model terlebih dahulu");
@@ -500,6 +501,8 @@ const Page = () => {
             </div>
           </div>
         </div>
+        <h1>RESULT DATA</h1>
+        <p>{dataAction}</p>
       </div>
     </div>
   );
