@@ -74,7 +74,7 @@ const Page = () => {
         }
       }
       if (res?.data && res?.data.length !== 0) {
-        if (checkMessage > 2) {
+        if (checkMessage > 3) {
           try {
             const newMessage = queueName.replace(regex, "").trim();
             await submitQueue({
