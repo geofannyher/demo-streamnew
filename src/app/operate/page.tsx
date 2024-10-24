@@ -5,7 +5,6 @@ import { IQueue } from "@/shared/Type/TestType";
 import { LoadingOutlined } from "@ant-design/icons";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { Button, Form, Input, message, Select } from "antd";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DropResult } from "react-beautiful-dnd";
 import { BiReset } from "react-icons/bi";
@@ -22,7 +21,6 @@ import {
   submitQueue,
 } from "../services/queue/queue.service";
 import { getReset } from "../services/reset/reset.service";
-import { useDataStore } from "../store/useSaveData";
 const Page = () => {
   const { data } = useListModel();
   const [queueName, setqueueName] = useState<string>("");
@@ -81,6 +79,7 @@ const Page = () => {
               action_name: res?.data[0]?.action_name,
               text: newMessage,
               queue_num: res?.data[0]?.code,
+              model_name: model,
               time_start: res?.data[0]?.time_start,
               time_end: res?.data[0]?.time_end,
               id_audio: res?.data[0]?.id_audio,
@@ -100,6 +99,7 @@ const Page = () => {
             text: "ready",
             queue_num: res?.data[0]?.code,
             time_start: res?.data[0]?.time_start,
+            model_name: model,
             time_end: res?.data[0]?.time_end,
             id_audio: res?.data[0]?.id_audio,
             position: newVariable + 1,
@@ -160,6 +160,7 @@ const Page = () => {
     label: item.model_name,
   }));
   const sortedDataQueue = [...dataQueue].sort((a, b) => a.id - b.id);
+
   const onDragEnd = async (result: DropResult) => {
     const { destination, source } = result;
 
@@ -204,7 +205,6 @@ const Page = () => {
   };
   const handleReset = async () => {
     const res: any = await getReset({ id: "duwi", star: "stream_director2" });
-    console.log(res);
     if (res?.status === 200 && res?.data.message === "Success") {
       return message.success("Success Reset ID");
     }
@@ -214,7 +214,7 @@ const Page = () => {
       <div className="container mx-auto">
         {/* select section  */}
         <div className="grid grid-cols-12 gap-2">
-          <div className="md:col-span-2 col-span-12 lg:col-span-2">
+          <div className="md:col-span-6 col-span-12 lg:col-span-2">
             <h1 className="py-2 text-sm md:text-base lg:text-base">
               Pilih model untuk tambah action{" "}
             </h1>
@@ -231,7 +231,7 @@ const Page = () => {
               </Item>
             </Form>
           </div>
-          <div className="col-span-12 lg:col-span-3 md:col-span-3">
+          <div className="col-span-12 lg:col-span-3 md:col-span-6">
             <h1 className="py-2 text-sm md:text-base lg:text-base">
               Pilih model streaming{" "}
               <i className="text-xs text-red-500 md:text-xs xl:text-sm 2xl:text-sm">
@@ -251,7 +251,7 @@ const Page = () => {
               </Item>
             </Form>
           </div>
-          <div className="col-span-12 items-center lg:col-span-4 md:col-span-4">
+          <div className="col-span-12 items-center lg:col-span-4 md:col-span-6">
             <h1 className="py-2 text-xs md:text-xs xl:text-sm 2xl:text-sm">
               Custom Waktu Scrape{" "}
               <i className="text-xs md:text-xs xl:text-sm 2xl:text-sm">
@@ -288,7 +288,7 @@ const Page = () => {
               </Button>
             </div>
           </div>
-          <div className="col-span-12 lg:col-span-3 md:col-span-3">
+          <div className="col-span-12 lg:col-span-3 md:col-span-6">
             <h1 className="py-2 text-sm md:text-base lg:text-base">
               Masukkan id tiktok{" "}
               <i className="text-xs md:text-xs xl:text-sm 2xl:text-sm text-red-500">
@@ -397,19 +397,24 @@ const Page = () => {
                       </th>
                     </tr>
                   ) : (
-                    sortedDataQueue.map((item, index) => (
-                      <tr key={index} className="bg-white">
-                        <th
-                          scope="row"
-                          className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
-                        >
-                          {item.action_name}
-                        </th>
-                        <td className="px-6 py-4">
-                          {item.code.toLocaleLowerCase()}
-                        </td>
-                      </tr>
-                    ))
+                    sortedDataQueue.map((item, index) => {
+                      if (item?.action_name == "idle") {
+                        return;
+                      }
+                      return (
+                        <tr key={index} className="bg-white">
+                          <th
+                            scope="row"
+                            className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
+                          >
+                            {item.action_name}
+                          </th>
+                          <td className="px-6 py-4">
+                            {item.code.toLocaleLowerCase()}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>

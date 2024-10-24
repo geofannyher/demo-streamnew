@@ -62,7 +62,7 @@ export const useFetchDataComment = (user: string) => {
       setstatus({ msg: "Sedang Scrape data...", load: true });
       const run = await client.actor("iBGygcuAxeHUkYsq9").call(input, {
         timeout: time ? parseInt(time) : 20,
-        memory: 512,
+        memory: 256,
         build: "latest",
       });
 
@@ -233,6 +233,7 @@ export const useFetchDataComment = (user: string) => {
           action_name: res?.data[0]?.action_name,
           text: codeOnly,
           queue_num: res?.data[0]?.code,
+          model_name: model,
           time_start: res?.data[0]?.time_start,
           time_end: res?.data[0]?.time_end,
           id_audio: res?.data[0]?.id_audio,

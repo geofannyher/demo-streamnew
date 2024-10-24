@@ -14,6 +14,7 @@ export interface ISubmitQueue {
   queue_num: string;
   time_end: string;
   time_start: string;
+  model_name?: string;
   id_audio: string;
   position: number;
 }

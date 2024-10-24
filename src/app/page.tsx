@@ -1,6 +1,8 @@
 "use client";
 import { socket } from "@/lib/socket";
 import { supabase } from "@/lib/supabase";
+import { Action } from "@/shared/Url.interface";
+import dechroma from "dechroma";
 import React, { useRef, useState, useEffect } from "react";
 import ReactPlayer from "react-player";
 
@@ -17,21 +19,32 @@ const VideoPlayer = () => {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isOnlyAudio, setIsOnlyAudio] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
+  const [displayChroma, setDisplayChroma] = useState(false);
 
   const fetchDataModel = async () => {
+    const modelIdle = localStorage.getItem("modelstream");
     try {
-      const { data, error } = await supabase.from("model").select("*");
+      const { data, error } = await supabase.from("action").select(`
+          model_name,
+          time_start,time_end,action_name,
+          model (
+            video_url
+          )
+        `);
+      const url: Action[] = data?.filter(
+        (a) => a?.model_name == modelIdle && a.action_name == "idle"
+      ) as any;
+
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const modelIdle = localStorage.getItem("modelstream");
-        const models = data.find((item) => item.model_name === modelIdle);
+      if (data && url) {
+        // const models = data.find((item) => item.model_name === modelIdle);
 
-        if (models) {
-          setModelStream(models.video_url);
-          setIdleTimeStart(Number(models.time_start));
-          setIdleTimeEnd(Number(models.time_end));
-        }
+        // if (models) {
+        setModelStream(url[0].model?.video_url);
+        setIdleTimeStart(Number(url[0].time_start));
+        setIdleTimeEnd(Number(url[0].time_end));
+        // }
       }
     } catch (error) {
       console.error("Error fetching data from Supabase:", error);
@@ -53,6 +66,56 @@ const VideoPlayer = () => {
   }, [modelStream]);
 
   useEffect(() => {
+    setTimeout(() => {
+      setDisplayChroma(true);
+
+      const videoo: HTMLElement | null = document.querySelector("#test");
+      console.log(videoo);
+      if (videoo) {
+        const inVideo: HTMLVideoElement | null = videoo?.querySelector(
+          "video"
+        ) as HTMLVideoElement;
+        const ccanvas: HTMLCanvasElement | null = document.querySelector(
+          "canvas"
+        ) as HTMLCanvasElement;
+
+        if (ccanvas && inVideo) {
+          ccanvas.setAttribute("height", window.innerHeight as any);
+          ccanvas.setAttribute("width", "550px");
+
+          const ctx: CanvasRenderingContext2D | null = ccanvas.getContext(
+            "2d",
+            {
+              willReadFrequently: true,
+            }
+          );
+
+          const drawvid = () => {
+            if (ctx) {
+              ctx.clearRect(0, 0, ccanvas?.width, ccanvas?.height);
+
+              // Gambar frame dari video ke canvas
+              ctx.drawImage(inVideo, 0, 0, ccanvas?.width, ccanvas?.height);
+
+              // Ambil data gambar dari canvas
+              const frame: ImageData = ctx.getImageData(
+                0,
+                0,
+                ccanvas?.width,
+                ccanvas?.height
+              );
+
+              dechroma(frame, [0, 100], [145, 255], [0, 110]);
+
+              ctx.putImageData(frame, 0, 0);
+            }
+            requestAnimationFrame(drawvid);
+          };
+          inVideo?.addEventListener("play", drawvid);
+        }
+      }
+    }, 3000);
+
     fetchDataModel();
     setAudioUrl(
       "https://res.cloudinary.com/dcd1jeldi/video/upload/v1727774746/h9fqhyiwmx5hu7v5h3r3.mp3"
@@ -141,40 +204,56 @@ const VideoPlayer = () => {
     setIsAudioPlaying(false);
     socket.emit("audio_finished");
   };
-  console.log(modelStream);
 
   return (
-    <div className="grid grid-cols-3 h-[100dvh]">
-      <div className="col-span-3 flex items-center justify-center bg-white h-full">
-        <div
-          style={{
-            width: "calc(100dvh * 9 / 16)",
-          }}
-          className="relative bg-white flex items-center justify-center"
-        >
-          <div className="flex h-full flex-col items-center justify-center">
-            <div className="relative">
-              {videoIdle && (
-                <ReactPlayer
-                  ref={videoRef}
-                  url={videoIdle}
-                  playing={true}
-                  controls
-                  onProgress={handleProgress}
-                  height="calc(100vh)" // Set tinggi penuh
-                  width="150%" // Sesuaikan lebar dengan parent div
-                  muted={isMuted}
-                />
-              )}
-            </div>
+    <div className="h-[100dvh] flex flex-col">
+      {/* Flex Container for Videos */}
+      {/* Left Side for Video */}
+      <div className="flex-1 flex">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="relative">
+            {videoIdle && (
+              <ReactPlayer
+                id="test"
+                ref={videoRef}
+                url={videoIdle}
+                playing={true}
+                controls
+                onProgress={handleProgress}
+                height="100dvh" // Set tinggi penuh
+                muted={isMuted}
+                config={{
+                  file: { attributes: { crossOrigin: "anonymous" } },
+                }}
+              />
+            )}
           </div>
         </div>
+
+        {/* Right Side for Audio Controls */}
+        {displayChroma && (
+          <div className="flex-1 flex items-center relative justify-center">
+            <div className="absolute right-0 top-0 z-10">
+              <img
+                src="https://images.pexels.com/photos/4352247/pexels-photo-4352247.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+                alt="daun"
+                className="h-[100dvh] w-[550px]"
+              />
+            </div>
+
+            <canvas className="absolute right-0 top-0 z-20"></canvas>
+          </div>
+        )}
       </div>
+
+      {/* Audio Element */}
       {audioUrl && audioUrl !== "only" && (
-        <audio ref={audioRef} onEnded={handleAudioEnded} autoPlay controls>
-          <source src={audioUrl} type="audio/mpeg" />
-          Your browser does not support the audio element.
-        </audio>
+        <div className="flex justify-center p-4">
+          <audio ref={audioRef} onEnded={handleAudioEnded} autoPlay controls>
+            <source src={audioUrl} type="audio/mpeg" />
+            Your browser does not support the audio element.
+          </audio>
+        </div>
       )}
     </div>
   );

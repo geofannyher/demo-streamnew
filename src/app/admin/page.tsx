@@ -1,16 +1,11 @@
 "use client";
-import React, { useRef, useState } from "react";
-import {
-  DeleteOutlined,
-  EditOutlined,
-  InboxOutlined,
-  LoadingOutlined,
-} from "@ant-design/icons";
-import { Form, message, Modal, Select, Upload, UploadProps } from "antd";
 import { supabase } from "@/lib/supabase";
-import { useFormHandler } from "../hook/useSubmitAction";
-import { useQueueData } from "../hook/useQueueData";
+import { EditOutlined, LoadingOutlined } from "@ant-design/icons";
+import { Form, message, Modal, Select } from "antd";
+import React, { useRef, useState } from "react";
 import { useListModel } from "../hook/useListModel";
+import { useQueueData } from "../hook/useQueueData";
+import { useFormHandler } from "../hook/useSubmitAction";
 
 const SubmitMessage: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -20,8 +15,6 @@ const SubmitMessage: React.FC = () => {
   const [editStart, setEditStart] = useState();
   const [editEnd, setEditEnd] = useState();
   const [dataTab, setDataTab] = useState<any>();
-  const [start, setStart] = useState();
-  const [end, setEnd] = useState();
   const [status, setStatus] = useState("");
   const [modelCreate, setModelCreate] = useState("");
 
@@ -29,8 +22,6 @@ const SubmitMessage: React.FC = () => {
   const { Item } = Form;
 
   const { data } = useListModel();
-  const [fileUrl, setFileUrl] = useState<any>();
-  const { Dragger } = Upload;
 
   const {
     fetchData,
@@ -42,45 +33,26 @@ const SubmitMessage: React.FC = () => {
 
   const { uploadFileToCloudinary, handleSubmit } = useFormHandler();
 
-  const props: UploadProps = {
-    name: "file",
-    multiple: true,
-    onChange(info) {
-      setFileUrl(info?.file);
-    },
-  };
-
-  const handleSend = async () => {
+  // submit form create model
+  const handleSend = async (e: any) => {
+    console.log(e);
+    e?.preventDefault();
     if (!modelCreate.trim()) {
       message.error("model Name cannot be empty");
       return;
     }
 
-    if (!fileUrl) {
-      message.error("video idle harus di upload");
-      return;
-    }
-
     try {
       setLoading(true);
-      const formData = new FormData();
-      formData.append("file", fileUrl);
-      formData.append("upload_preset", "kantor");
-
-      const fileUrlString = await uploadFileToCloudinary(fileUrl);
-      await supabase.from("action").insert({
-        model_name: modelCreate,
-        video_url: fileUrlString,
-        action_name: "idle",
+      const res = await supabase.from("model").insert({
+        model_name: e?.target[0]?.value,
+        video_url: e?.target[1]?.value,
+        url_background: e?.target[1]?.value,
       });
-      await supabase.from("model").insert({
-        model_name: modelCreate,
-        video_url: fileUrlString,
-        action_name: "idle",
-      });
+      if (!res) {
+        message.error("Error submit ");
+      }
       message.success("Model successfully created and processed");
-      location.reload();
-      setModelCreate("");
     } catch (error: any) {
       message.error(`Error: ${error.message}`);
     } finally {
@@ -145,56 +117,58 @@ const SubmitMessage: React.FC = () => {
       location.reload();
     }
   };
-
   return (
     <>
       <div className="grid mx-auto container grid-cols-3 mt-20 p-10 gap-2">
         <div className="col-span-1 md:col-span-1 lg:col-span-1">
           <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-md">
             <h1 className="text-2xl font-bold mb-4">Create new Model</h1>
-            <div className="mb-4">
-              <label htmlFor="name">Model</label>
-              <input
-                type="text"
+            <form onSubmit={handleSend}>
+              <div className="mb-4">
+                <label htmlFor="name">Model</label>
+                <input
+                  type="text"
+                  disabled={loading}
+                  className="w-full p-2 border rounded"
+                  placeholder="Model Name"
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="name">Url video</label>
+                <input
+                  type="text"
+                  disabled={loading}
+                  className="w-full p-2 border rounded"
+                  placeholder="Url Video"
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="name">Url Background</label>
+                <input
+                  type="text"
+                  disabled={loading}
+                  className="w-full p-2 border rounded"
+                  placeholder="Url Background"
+                />
+              </div>
+              <button
+                type="submit"
                 disabled={loading}
-                className="w-full p-2 border rounded"
-                placeholder="Model Name"
-                value={modelCreate}
-                onChange={(e) => setModelCreate(e.target.value)}
-              />
-            </div>
-            <button
-              disabled={loading}
-              className="w-full bg-violet-500 hover:bg-violet-900 transition duration-300 text-white p-2 rounded"
-              onClick={handleSend}
-            >
-              {loading ? (
-                <span>
-                  <LoadingOutlined style={{ marginRight: 8 }} />
-                  {status}
-                </span>
-              ) : (
-                "Create Model"
-              )}
-            </button>
+                className="w-full bg-violet-500 hover:bg-violet-900 transition duration-300 text-white p-2 rounded"
+              >
+                {loading ? (
+                  <span>
+                    <LoadingOutlined style={{ marginRight: 8 }} />
+                    {status}
+                  </span>
+                ) : (
+                  "Create Model"
+                )}
+              </button>
+            </form>
           </div>
         </div>
-        <div className="col-span-2">
-          <div className="h-full">
-            <Dragger {...props}>
-              <p className="ant-upload-drag-icon">
-                <InboxOutlined />
-              </p>
-              <p className="ant-upload-text">
-                Click or drag file to this area to upload
-              </p>
-              <p className="ant-upload-hint">
-                Support for a single or bulk upload. Strictly prohibited from
-                uploading company data or other banned files.
-              </p>
-            </Dragger>
-          </div>
-        </div>
+
         <div className="col-span-1 md:col-span-1 lg:col-span-1">
           <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-md">
             <h1 className="text-2xl font-bold mb-4">Create Action</h1>
